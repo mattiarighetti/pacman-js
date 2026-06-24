@@ -1071,9 +1071,9 @@ class Ghost {
     } else if (mode === 'eyes') {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
         + `spriteSheets/characters/ghosts/eyes_${direction}.svg)`;
-    } else if (this.visualState === 'paymentCard') {
+    } else if (mode === 'scared') {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
-        + 'spriteSheets/characters/ghosts/cash/cash_card.svg)';
+        + 'spriteSheets/characters/ghosts/cash/cash_red.svg)';
     } else {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
         + `spriteSheets/characters/ghosts/cash/cash_${direction}.svg)`;
@@ -1585,24 +1585,6 @@ class Ghost {
   clearCaughtVisualState() {
     delete this.visualState;
     this.setSpriteSheet(this.name, this.direction, this.mode);
-  }
-
-  /**
-   * Shows the payment card sprite after points are collected.
-   */
-  setPaymentCardVisualState() {
-    this.visualState = 'paymentCard';
-    this.setSpriteSheet(this.name, this.direction, this.mode);
-  }
-
-  /**
-   * Clears the temporary payment card visual state.
-   */
-  clearPaymentCardVisualState() {
-    if (this.visualState === 'paymentCard') {
-      delete this.visualState;
-      this.setSpriteSheet(this.name, this.direction, this.mode);
-    }
   }
 
   /**
@@ -2865,7 +2847,6 @@ class GameCoordinator {
         `${imgBase}characters/pacman/mini_pos_up.svg`,
 
         // Cash enemies
-        `${imgBase}characters/ghosts/cash/cash_card.svg`,
         `${imgBase}characters/ghosts/cash/cash_down.svg`,
         `${imgBase}characters/ghosts/cash/cash_left.svg`,
         `${imgBase}characters/ghosts/cash/cash_red.svg`,
@@ -3571,34 +3552,11 @@ class GameCoordinator {
       const height = this.scaledTileSize * 2;
 
       this.displayText({ left, top }, e.detail.points, 2000, width, height);
-      this.activatePaymentCardVisualState();
       this.soundManager.play('fruit');
       this.updateFruitDisplay(
         this.fruit.determineImage('fruit', e.detail.points),
       );
     }
-  }
-
-  /**
-   * Shows payment card sprites on cash enemies after points are collected.
-   */
-  activatePaymentCardVisualState() {
-    this.removeTimer({ detail: { timer: this.paymentCardVisualTimer } });
-
-    this.ghosts.forEach((ghost) => {
-      if (ghost.setPaymentCardVisualState) {
-        ghost.setPaymentCardVisualState();
-      }
-    });
-
-    this.paymentCardVisualTimer = new Timer(() => {
-      this.ghosts.forEach((ghost) => {
-        if (ghost.clearPaymentCardVisualState) {
-          ghost.clearPaymentCardVisualState();
-        }
-      });
-      this.paymentCardVisualTimer = undefined;
-    }, 5000);
   }
 
   /**
@@ -4399,8 +4357,6 @@ class GameCoordinator {
       }),
     );
     this.displayText(position, comboPoints, pauseDuration, measurement);
-    this.activatePaymentCardVisualState();
-
     this.allowPacmanMovement = false;
     this.pacman.display = false;
     this.pacman.moving = false;

@@ -173,9 +173,9 @@ class Ghost {
     } else if (mode === 'eyes') {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
         + `spriteSheets/characters/ghosts/eyes_${direction}.svg)`;
-    } else if (this.visualState === 'paymentCard') {
+    } else if (mode === 'scared') {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
-        + 'spriteSheets/characters/ghosts/cash/cash_card.svg)';
+        + 'spriteSheets/characters/ghosts/cash/cash_red.svg)';
     } else {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
         + `spriteSheets/characters/ghosts/cash/cash_${direction}.svg)`;
@@ -687,24 +687,6 @@ class Ghost {
   clearCaughtVisualState() {
     delete this.visualState;
     this.setSpriteSheet(this.name, this.direction, this.mode);
-  }
-
-  /**
-   * Shows the payment card sprite after points are collected.
-   */
-  setPaymentCardVisualState() {
-    this.visualState = 'paymentCard';
-    this.setSpriteSheet(this.name, this.direction, this.mode);
-  }
-
-  /**
-   * Clears the temporary payment card visual state.
-   */
-  clearPaymentCardVisualState() {
-    if (this.visualState === 'paymentCard') {
-      delete this.visualState;
-      this.setSpriteSheet(this.name, this.direction, this.mode);
-    }
   }
 
   /**

@@ -529,7 +529,6 @@ class GameCoordinator {
         `${imgBase}characters/pacman/mini_pos_up.svg`,
 
         // Cash enemies
-        `${imgBase}characters/ghosts/cash/cash_card.svg`,
         `${imgBase}characters/ghosts/cash/cash_down.svg`,
         `${imgBase}characters/ghosts/cash/cash_left.svg`,
         `${imgBase}characters/ghosts/cash/cash_red.svg`,
@@ -1235,34 +1234,11 @@ class GameCoordinator {
       const height = this.scaledTileSize * 2;
 
       this.displayText({ left, top }, e.detail.points, 2000, width, height);
-      this.activatePaymentCardVisualState();
       this.soundManager.play('fruit');
       this.updateFruitDisplay(
         this.fruit.determineImage('fruit', e.detail.points),
       );
     }
-  }
-
-  /**
-   * Shows payment card sprites on cash enemies after points are collected.
-   */
-  activatePaymentCardVisualState() {
-    this.removeTimer({ detail: { timer: this.paymentCardVisualTimer } });
-
-    this.ghosts.forEach((ghost) => {
-      if (ghost.setPaymentCardVisualState) {
-        ghost.setPaymentCardVisualState();
-      }
-    });
-
-    this.paymentCardVisualTimer = new Timer(() => {
-      this.ghosts.forEach((ghost) => {
-        if (ghost.clearPaymentCardVisualState) {
-          ghost.clearPaymentCardVisualState();
-        }
-      });
-      this.paymentCardVisualTimer = undefined;
-    }, 5000);
   }
 
   /**
@@ -2063,8 +2039,6 @@ class GameCoordinator {
       }),
     );
     this.displayText(position, comboPoints, pauseDuration, measurement);
-    this.activatePaymentCardVisualState();
-
     this.allowPacmanMovement = false;
     this.pacman.display = false;
     this.pacman.moving = false;

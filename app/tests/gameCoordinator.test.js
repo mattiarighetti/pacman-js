@@ -911,7 +911,7 @@ describe('gameCoordinator', () => {
         assert(imgSources.includes(
           'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_red.svg',
         ));
-        assert(imgSources.includes(
+        assert(!imgSources.includes(
           'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_card.svg',
         ));
       });
@@ -1635,12 +1635,6 @@ describe('gameCoordinator', () => {
     beforeEach(() => {
       comp.updateFruitDisplay = sinon.fake();
       comp.fruit.determineImage = sinon.fake();
-      comp.ghosts = [
-        {
-          setPaymentCardVisualState: sinon.fake(),
-          clearPaymentCardVisualState: sinon.fake(),
-        },
-      ];
     });
 
     it('adds to the total number of points', () => {
@@ -1727,66 +1721,14 @@ describe('gameCoordinator', () => {
       assert(comp.updateExtraLivesDisplay.called);
     });
 
-    it('keeps ghost cash unchanged when pacdots award points', () => {
-      comp.points = 0;
-
-      comp.awardPoints({ detail: { points: 50, type: 'pacdot' } });
-      assert(!comp.ghosts[0].setPaymentCardVisualState.called);
-      assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
-    });
-
-    it('turns ghost cash into payment cards when rendered fruit points appear', () => {
-      comp.points = 0;
-      comp.displayText = sinon.fake();
-
-      comp.awardPoints({ detail: { points: 50, type: 'fruit' } });
-      assert(comp.ghosts[0].setPaymentCardVisualState.calledOnce);
-      assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
-
-      clock.tick(5000);
-      assert(comp.ghosts[0].clearPaymentCardVisualState.calledOnce);
-    });
-
-    it('restarts the payment card timer when more points are collected', () => {
-      comp.points = 0;
-      global.window.clearTimeout = clearTimeout;
-      global.Timer = class {
-        constructor(callback, delay) {
-          this.timerId = setTimeout(callback, delay);
-        }
-      };
-
-      comp.displayText = sinon.fake();
-      comp.awardPoints({ detail: { points: 50, type: 'fruit' } });
-      clock.tick(4000);
-      comp.awardPoints({ detail: { points: 10, type: 'fruit' } });
-      clock.tick(1000);
-      assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
-
-      clock.tick(4000);
-      assert(comp.ghosts[0].clearPaymentCardVisualState.calledOnce);
-    });
-
-    it('does not turn ghost cash into payment cards for negative points', () => {
+    it('does not trigger fruit display behavior for negative points', () => {
       comp.points = 100;
       comp.highScore = 500;
 
       comp.awardPoints({ detail: { points: -50, type: 'otp' } });
       clock.tick(5000);
 
-      assert(!comp.ghosts[0].setPaymentCardVisualState.called);
-      assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
-    });
-
-    it('skips payment card hooks when a ghost does not expose them', () => {
-      comp.points = 0;
-      comp.displayText = sinon.fake();
-      comp.ghosts = [{}];
-
-      comp.awardPoints({ detail: { points: 50, type: 'fruit' } });
-      clock.tick(5000);
-
-      assert.strictEqual(comp.points, 50);
+      assert(!comp.updateFruitDisplay.called);
     });
   });
 
@@ -2705,7 +2647,6 @@ describe('gameCoordinator', () => {
         name: 'blinky',
         pause: sinon.fake(),
         clearCaughtVisualState: sinon.fake(),
-        setPaymentCardVisualState: sinon.fake(),
       };
       const e = {
         detail: {
@@ -2733,7 +2674,6 @@ describe('gameCoordinator', () => {
         ),
       );
       assert(comp.displayText.called);
-      assert(ghost.setPaymentCardVisualState.calledOnce);
       assert(comp.determineComboPoints.called);
 
       clock.tick(1000);

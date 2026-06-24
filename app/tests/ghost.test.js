@@ -152,14 +152,14 @@ describe('ghost', () => {
   });
 
   describe('setSpriteSheet', () => {
-    it('keeps the cash spritesheet if the ghost is scared', () => {
+    it('sets the red cash spritesheet if the ghost is scared', () => {
       comp.mode = 'scared';
       comp.scaredColor = 'blue';
       comp.setSpriteSheet(undefined, 'left', 'scared');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
         'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
-        + 'cash_left.svg)',
+        + 'cash_red.svg)',
       );
 
       comp.scaredColor = 'white';
@@ -167,37 +167,12 @@ describe('ghost', () => {
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
         'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
-        + 'cash_right.svg)',
+        + 'cash_red.svg)',
       );
     });
 
     it('sets the red cash spritesheet if the ghost has been caught', () => {
       comp.visualState = 'caught';
-
-      comp.setSpriteSheet('blinky', 'up', 'eyes');
-
-      assert.strictEqual(
-        comp.animationTarget.style.backgroundImage,
-        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
-        + 'cash_red.svg)',
-      );
-    });
-
-    it('sets the payment card spritesheet if the ghost is temporarily converted', () => {
-      comp.visualState = 'paymentCard';
-
-      comp.setSpriteSheet('blinky', 'up', 'chase');
-
-      assert.strictEqual(
-        comp.animationTarget.style.backgroundImage,
-        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
-        + 'cash_card.svg)',
-      );
-    });
-
-    it('keeps caught red priority over the payment card visual state', () => {
-      comp.visualState = 'paymentCard';
-      comp.setCaughtVisualState();
 
       comp.setSpriteSheet('blinky', 'up', 'eyes');
 
@@ -900,34 +875,6 @@ describe('ghost', () => {
         comp.animationTarget.style.backgroundImage,
         'url(app/style/graphics/spriteSheets/characters/ghosts/eyes_up.svg)',
       );
-    });
-  });
-
-  describe('payment card visual state', () => {
-    it('sets and clears the temporary payment card visual state', () => {
-      comp.setPaymentCardVisualState();
-      assert.strictEqual(comp.visualState, 'paymentCard');
-      assert.strictEqual(
-        comp.animationTarget.style.backgroundImage,
-        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
-        + 'cash_card.svg)',
-      );
-
-      comp.clearPaymentCardVisualState();
-      assert.strictEqual(comp.visualState, undefined);
-      assert.strictEqual(
-        comp.animationTarget.style.backgroundImage,
-        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
-        + 'cash_left.svg)',
-      );
-    });
-
-    it('leaves other visual states untouched when clearing payment card state', () => {
-      comp.visualState = 'caught';
-
-      comp.clearPaymentCardVisualState();
-
-      assert.strictEqual(comp.visualState, 'caught');
     });
   });
 
