@@ -27,6 +27,7 @@ function createTestElement(overrides = {}) {
 
 describe('gameCoordinator', () => {
   beforeEach(() => {
+    delete global.FirebaseLeaderboard;
     global.Pacman = class {
       activateContactlessMode() {}
 
@@ -181,6 +182,7 @@ describe('gameCoordinator', () => {
 
   afterEach(() => {
     clock.restore();
+    delete global.FirebaseLeaderboard;
   });
 
   describe('determineScale', () => {
@@ -295,6 +297,29 @@ describe('gameCoordinator', () => {
       assert.strictEqual(instance.playerNameInput, null);
 
       global.document.getElementById = originalGetElementById;
+    });
+
+    it('sets a themed dynamic placeholder for the player name input', () => {
+      const originalGetElementById = global.document.getElementById;
+      const originalRandom = Math.random;
+      const playerNameInput = createTestElement({ placeholder: 'Es. Team Nexi' });
+      Math.random = () => 0.35;
+      global.document.getElementById = (id) => (
+        id === 'player-name-input'
+          ? playerNameInput
+          : originalGetElementById(id)
+      );
+
+      try {
+        const instance = new GameCoordinator();
+        assert(Array.isArray(instance.playerNamePlaceholders));
+        assert(instance.playerNamePlaceholders.includes(playerNameInput.placeholder));
+        assert.notStrictEqual(playerNameInput.placeholder, 'Es. Team Nexi');
+        assert.strictEqual(playerNameInput.value, '');
+      } finally {
+        Math.random = originalRandom;
+        global.document.getElementById = originalGetElementById;
+      }
     });
 
     it('handles pages without homepage options modal controls', () => {
@@ -1163,15 +1188,7 @@ describe('gameCoordinator', () => {
     });
   });
 
-  describe('saveLeaderboardEntry', () => {
-    it('does nothing if the score is zero', () => {
-      comp.points = 0;
-      global.localStorage.setItem = sinon.fake();
-
-      comp.saveLeaderboardEntry();
-      assert(!global.localStorage.setItem.called);
-    });
-
+  describe('saveLocalLeaderboardEntry', () => {
     it('stores a sorted leaderboard with a max of 20 records', () => {
       const existing = [];
       for (let i = 0; i < 21; i += 1) {
@@ -1182,8 +1199,6 @@ describe('gameCoordinator', () => {
         });
       }
 
-      comp.points = 5000;
-      comp.currentPlayerName = 'Nexi Hero';
       global.localStorage.getItem = sinon.fake((key) => {
         if (key === 'pacmanNexiLeaderboard') {
           return JSON.stringify(existing);
@@ -1193,7 +1208,11 @@ describe('gameCoordinator', () => {
       });
       global.localStorage.setItem = sinon.fake();
 
-      comp.saveLeaderboardEntry();
+      assert.strictEqual(comp.saveLocalLeaderboardEntry({
+        name: 'Nexi Hero',
+        score: 5000,
+        date: '2026-01-01T00:00:00.000Z',
+      }), true);
       assert(global.localStorage.setItem.calledOnce);
       assert.strictEqual(global.localStorage.setItem.firstCall.args[0], 'pacmanNexiLeaderboard');
 
@@ -1204,28 +1223,33 @@ describe('gameCoordinator', () => {
     });
 
     it('handles invalid or non-array leaderboard values', () => {
-      comp.points = 120;
-      comp.currentPlayerName = 'Nexi Dev';
+      const entry = {
+        name: 'Nexi Dev',
+        score: 120,
+        date: '2026-01-01T00:00:00.000Z',
+      };
       global.localStorage.setItem = sinon.fake();
 
       global.localStorage.getItem = sinon.fake.returns('{invalid-json');
-      comp.saveLeaderboardEntry();
+      comp.saveLocalLeaderboardEntry(entry);
       let saved = JSON.parse(global.localStorage.setItem.lastCall.args[1]);
       assert.strictEqual(saved.length, 1);
 
       global.localStorage.getItem = sinon.fake.returns('{"foo":"bar"}');
-      comp.saveLeaderboardEntry();
+      comp.saveLocalLeaderboardEntry(entry);
       saved = JSON.parse(global.localStorage.setItem.lastCall.args[1]);
       assert.strictEqual(saved.length, 1);
     });
 
     it('starts from an empty leaderboard when none is stored', () => {
-      comp.points = 240;
-      comp.currentPlayerName = 'Nexi Rookie';
       global.localStorage.getItem = sinon.fake.returns(undefined);
       global.localStorage.setItem = sinon.fake();
 
-      comp.saveLeaderboardEntry();
+      comp.saveLocalLeaderboardEntry({
+        name: 'Nexi Rookie',
+        score: 240,
+        date: '2026-01-01T00:00:00.000Z',
+      });
       const saved = JSON.parse(global.localStorage.setItem.firstCall.args[1]);
       assert.strictEqual(saved.length, 1);
       assert.strictEqual(saved[0].name, 'Nexi Rookie');
@@ -1233,19 +1257,113 @@ describe('gameCoordinator', () => {
     });
 
     it('sorts leaderboard entries with missing scores as zero', () => {
-      comp.points = 1;
-      comp.currentPlayerName = 'Nexi Finisher';
       global.localStorage.getItem = sinon.fake.returns(JSON.stringify([
         { name: 'No Score' },
         { name: 'Low Score', score: 0 },
       ]));
       global.localStorage.setItem = sinon.fake();
 
-      comp.saveLeaderboardEntry();
+      comp.saveLocalLeaderboardEntry({
+        name: 'Nexi Finisher',
+        score: 1,
+        date: '2026-01-01T00:00:00.000Z',
+      });
       const saved = JSON.parse(global.localStorage.setItem.firstCall.args[1]);
       assert.strictEqual(saved[0].name, 'Nexi Finisher');
       assert.strictEqual(saved[1].score, undefined);
       assert.strictEqual(saved[2].score, 0);
+    });
+  });
+
+  describe('saveLeaderboardEntry', () => {
+    it('does nothing if the score is zero', async () => {
+      comp.points = 0;
+      comp.saveRemoteLeaderboardEntry = sinon.fake.resolves(true);
+      comp.saveLocalLeaderboardEntry = sinon.fake();
+      global.localStorage.setItem = sinon.fake();
+
+      assert.strictEqual(await comp.saveLeaderboardEntry(), false);
+      assert(!comp.saveRemoteLeaderboardEntry.called);
+      assert(!comp.saveLocalLeaderboardEntry.called);
+      assert(!global.localStorage.setItem.called);
+    });
+
+    it('sends the entry to firebase before using local fallback', async () => {
+      const saveRemoteLeaderboardEntry = sinon.stub(comp, 'saveRemoteLeaderboardEntry').resolves(true);
+      comp.saveLocalLeaderboardEntry = sinon.fake();
+      comp.points = 900;
+      comp.currentPlayerName = 'Remote Player';
+      global.localStorage.setItem = sinon.fake();
+
+      assert.strictEqual(await comp.saveLeaderboardEntry(), true);
+
+      assert(saveRemoteLeaderboardEntry.calledOnce);
+      assert.strictEqual(saveRemoteLeaderboardEntry.firstCall.firstArg.name, 'Remote Player');
+      assert.strictEqual(saveRemoteLeaderboardEntry.firstCall.firstArg.score, 900);
+      assert(!comp.saveLocalLeaderboardEntry.called);
+      assert(!global.localStorage.setItem.calledWith('pacmanNexiLeaderboard'));
+    });
+
+    it('falls back to local storage when firebase is unavailable', async () => {
+      comp.saveRemoteLeaderboardEntry = sinon.fake.resolves(false);
+      comp.saveLocalLeaderboardEntry = sinon.fake.returns(true);
+      comp.points = 250;
+      comp.currentPlayerName = 'Offline Player';
+
+      assert.strictEqual(await comp.saveLeaderboardEntry(), false);
+
+      assert(comp.saveRemoteLeaderboardEntry.calledOnce);
+      assert(comp.saveLocalLeaderboardEntry.calledOnce);
+      assert.strictEqual(comp.saveLocalLeaderboardEntry.firstCall.firstArg.name, 'Offline Player');
+      assert.strictEqual(comp.saveLocalLeaderboardEntry.firstCall.firstArg.score, 250);
+    });
+
+    it('falls back to local storage when firebase saving rejects', async () => {
+      global.FirebaseLeaderboard = {
+        saveGame: sinon.stub().rejects(new Error('network down')),
+      };
+      comp.saveLocalLeaderboardEntry = sinon.fake.returns(true);
+      comp.points = 700;
+      comp.currentPlayerName = 'Fallback Player';
+
+      assert.strictEqual(await comp.saveLeaderboardEntry(), false);
+
+      assert(global.FirebaseLeaderboard.saveGame.calledOnce);
+      assert(comp.saveLocalLeaderboardEntry.calledOnce);
+    });
+
+    it('returns false when the remote leaderboard helper is unavailable', async () => {
+      assert.strictEqual(await comp.saveRemoteLeaderboardEntry({ score: 200 }), false);
+    });
+
+    it('saves remote leaderboard entries when firebase is available', async () => {
+      global.FirebaseLeaderboard = {
+        saveGame: sinon.stub().resolves(true),
+      };
+      const entry = {
+        name: 'Nexi Remote',
+        score: 1200,
+        date: '2026-01-01T00:00:00.000Z',
+      };
+
+      assert.strictEqual(await comp.saveRemoteLeaderboardEntry(entry), true);
+      assert(global.FirebaseLeaderboard.saveGame.calledOnceWith(entry));
+    });
+
+    it('does not reject when remote leaderboard saving fails', async () => {
+      global.FirebaseLeaderboard = {
+        saveGame: sinon.stub().rejects(new Error('network down')),
+      };
+
+      assert.strictEqual(await comp.saveRemoteLeaderboardEntry({ score: 1200 }), false);
+    });
+
+    it('returns false when remote leaderboard saving returns a falsey value', async () => {
+      global.FirebaseLeaderboard = {
+        saveGame: sinon.stub().resolves(0),
+      };
+
+      assert.strictEqual(await comp.saveRemoteLeaderboardEntry({ score: 1200 }), false);
     });
   });
 
@@ -1666,9 +1784,11 @@ describe('gameCoordinator', () => {
     it('displays GAME OVER text and brings back the main menu', () => {
       comp.displayText = sinon.fake();
       comp.fruit.hideFruit = sinon.fake();
+      comp.saveLeaderboardEntry = sinon.fake.resolves(true);
       global.localStorage.setItem = sinon.fake();
 
       comp.gameOver();
+      assert(comp.saveLeaderboardEntry.called);
       assert(
         global.localStorage.setItem.calledWith('highScore', comp.highScore),
       );

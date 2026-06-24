@@ -113,11 +113,23 @@ class GameCoordinator {
       { points: 5000, message: 'Authorization approved', variant: 'approved' },
       { points: 10000, message: 'ioSi level up', variant: 'level-up' },
     ];
+    this.playerNamePlaceholders = [
+      'Es. Cashback Ninja',
+      'Es. Tap Champion',
+      'Es. POS Wizard',
+      'Es. Bonus Hunter',
+      'Es. Token Runner',
+      'Es. Swipe Master',
+      'Es. Card Combo',
+      'Es. Pixel Payer',
+    ];
     this.currentPlayerName = this.sanitizePlayerName(
       localStorage.getItem('pacmanNexiCurrentPlayer') || 'Player Nexi',
     );
     if (this.playerNameInput) {
-      this.playerNameInput.value = this.currentPlayerName;
+      this.playerNameInput.placeholder = this.playerNamePlaceholders[
+        Math.floor(Math.random() * this.playerNamePlaceholders.length)
+      ];
     }
 
     this.otpBonusPoints = 500;
@@ -535,7 +547,6 @@ class GameCoordinator {
         `${imgBase}pickups/powerPellet.svg`,
         `${imgBase}pickups/contactless.svg`,
         `${imgBase}pickups/otp.svg`,
-        'app/style/graphics/nexi/payment_dot.svg',
         'app/style/graphics/nexi/card_contactless.svg',
         'app/style/graphics/nexi/card_coral.svg',
         'app/style/graphics/nexi/card_virtual.svg',
@@ -1330,7 +1341,7 @@ class GameCoordinator {
   saveLeaderboardEntry() {
     const score = Number(this.points || 0);
     if (score <= 0) {
-      return;
+      return Promise.resolve(false);
     }
 
     const playerName = this.sanitizePlayerName(this.currentPlayerName);
@@ -1340,6 +1351,17 @@ class GameCoordinator {
       date: new Date().toISOString(),
     };
 
+    return this.saveRemoteLeaderboardEntry(nextEntry).then((remoteSaved) => {
+      if (remoteSaved) {
+        return true;
+      }
+
+      this.saveLocalLeaderboardEntry(nextEntry);
+      return false;
+    });
+  }
+
+  saveLocalLeaderboardEntry(nextEntry) {
     let leaderboard = [];
     try {
       leaderboard = JSON.parse(
@@ -1358,6 +1380,18 @@ class GameCoordinator {
       'pacmanNexiLeaderboard',
       JSON.stringify(leaderboard.slice(0, 20)),
     );
+    return true;
+  }
+
+  saveRemoteLeaderboardEntry(entry) {
+    if (typeof FirebaseLeaderboard === 'undefined') {
+      return Promise.resolve(false);
+    }
+
+    return Promise.resolve()
+      .then(() => FirebaseLeaderboard.saveGame(entry))
+      .then(Boolean)
+      .catch(() => false);
   }
 
   /**

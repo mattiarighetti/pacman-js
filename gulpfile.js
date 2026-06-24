@@ -15,6 +15,7 @@ function scripts() {
   return gulp
     .src([
       'app/scripts/utilities/characterUtil.js',
+      'app/scripts/utilities/firebaseLeaderboard.js',
       'app/scripts/utilities/leaderboard.js',
       'app/scripts/utilities/nexiTheme.js',
       'app/scripts/utilities/soundManager.js',

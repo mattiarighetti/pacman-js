@@ -5,8 +5,28 @@ const Pickup = require('../scripts/pickups/pickup');
 let pickup;
 let pacman;
 let mazeDiv;
+let previousEvent;
+let previousCustomEvent;
+
+const findDispatchedEvent = (type) => global.window.dispatchEvent
+  .getCalls()
+  .map((call) => call.args[0])
+  .find((event) => event.type === type);
 
 beforeEach(() => {
+  previousEvent = global.Event;
+  previousCustomEvent = global.CustomEvent;
+  global.Event = class {
+    constructor(type) {
+      this.type = type;
+    }
+  };
+  global.CustomEvent = class extends global.Event {
+    constructor(type, init = {}) {
+      super(type);
+      this.detail = init.detail;
+    }
+  };
   global.document = {
     createElement: () => ({
       classList: {
@@ -29,6 +49,11 @@ beforeEach(() => {
   };
 
   pickup = new Pickup('pacdot', 8, 1, 1, pacman, mazeDiv);
+});
+
+afterEach(() => {
+  global.Event = previousEvent;
+  global.CustomEvent = previousCustomEvent;
 });
 
 describe('pickup', () => {
@@ -62,7 +87,7 @@ describe('pickup', () => {
       assert.strictEqual(pickup.x, 11);
       assert.strictEqual(pickup.y, 11);
       assert.deepEqual(pickup.animationTarget.style, {
-        backgroundImage: 'url(app/style/graphics/nexi/payment_dot.svg)',
+        backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)',
         backgroundRepeat: 'no-repeat',
         backgroundSize: '2px 2px',
         height: '2px',
@@ -211,7 +236,10 @@ describe('pickup', () => {
 
     it('returns payment images for other pickups', () => {
       const pacdot = pickup.determineImage('pacdot', undefined);
-      assert.strictEqual(pacdot, `${baseUrl}payment_dot.svg)`);
+      assert.strictEqual(
+        pacdot,
+        'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)',
+      );
 
       const powerPellet = pickup.determineImage('powerPellet', undefined);
       assert.strictEqual(powerPellet, `${baseUrl}power_card_blue.svg)`);
@@ -223,6 +251,12 @@ describe('pickup', () => {
       assert.strictEqual(
         otp,
         'url(app/style/graphics/spriteSheets/pickups/otp.svg)',
+      );
+
+      const unrecognized = pickup.determineImage('unknown', undefined);
+      assert.strictEqual(
+        unrecognized,
+        'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)',
       );
     });
   });
@@ -444,14 +478,10 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledWith(
-        new CustomEvent('awardPoints', {
-          detail: {
-            points: pickup.points,
-            type: pickup.type,
-          },
-        }),
-      ));
+      assert.deepStrictEqual(findDispatchedEvent('awardPoints').detail, {
+        points: pickup.points,
+        type: pickup.type,
+      });
     });
 
     it('emits dotEaten event if a pacdot collides with Pacman', () => {
@@ -460,7 +490,7 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledWith(new Event('dotEaten')));
+      assert(findDispatchedEvent('dotEaten'));
     });
 
     it('emits powerUp event if a powerPellet collides with Pacman', () => {
@@ -469,8 +499,8 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledWith(new Event('dotEaten')));
-      assert(global.window.dispatchEvent.calledWith(new Event('powerUp')));
+      assert(findDispatchedEvent('dotEaten'));
+      assert(findDispatchedEvent('powerUp'));
     });
 
     it('emits only awardPoints if a fruit collides with Pacman', () => {
@@ -480,14 +510,10 @@ describe('pickup', () => {
 
       pickup.update();
       assert(global.window.dispatchEvent.calledOnce);
-      assert(global.window.dispatchEvent.calledWith(
-        new CustomEvent('awardPoints', {
-          detail: {
-            points: pickup.points,
-            type: pickup.type,
-          },
-        }),
-      ));
+      assert.deepStrictEqual(findDispatchedEvent('awardPoints').detail, {
+        points: pickup.points,
+        type: pickup.type,
+      });
     });
 
     it('emits no events if an unrecognized item collides with Pacman', () => {
@@ -505,7 +531,7 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledOnceWith(new Event('contactlessMode')));
+      assert.strictEqual(findDispatchedEvent('contactlessMode').type, 'contactlessMode');
     });
 
     it('emits otpMode if an OTP pickup collides with Pacman', () => {
@@ -514,7 +540,7 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledOnceWith(new Event('otpMode')));
+      assert.strictEqual(findDispatchedEvent('otpMode').type, 'otpMode');
     });
 
     it('collects visible pacdots inside the Contactless radius', () => {
@@ -526,7 +552,7 @@ describe('pickup', () => {
 
       pickup.update();
       assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
-      assert(global.window.dispatchEvent.calledWith(new Event('dotEaten')));
+      assert(findDispatchedEvent('dotEaten'));
     });
 
     it('does nothing if shouldCheckForCollision returns FALSE', () => {

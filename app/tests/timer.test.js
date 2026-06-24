@@ -5,8 +5,20 @@ const Timer = require('../scripts/utilities/timer');
 let comp;
 let clock;
 
+const findDispatchedEvent = (type) => window.dispatchEvent
+  .getCalls()
+  .map((call) => call.args[0])
+  .find((event) => event.type === type);
+
 describe('timer', () => {
   beforeEach(() => {
+    global.window = global.window || {};
+    global.CustomEvent = class {
+      constructor(type, init = {}) {
+        this.type = type;
+        this.detail = init.detail;
+      }
+    };
     window.setTimeout = () => { };
     window.dispatchEvent = () => { };
     clock = sinon.useFakeTimers();
@@ -49,19 +61,11 @@ describe('timer', () => {
       assert.strictEqual(comp.pausedBySystem, false);
       assert.deepEqual(comp.start, new Date());
       assert(!comp.callback.called);
-      assert(window.dispatchEvent.calledWith(new CustomEvent('addTimer', {
-        detail: {
-          timer: comp,
-        },
-      })));
+      assert.strictEqual(findDispatchedEvent('addTimer').detail.timer, comp);
 
       clock.tick(1000);
       assert(comp.callback.called);
-      assert(window.dispatchEvent.calledWith(new CustomEvent('removeTimer', {
-        detail: {
-          id: comp.timerId,
-        },
-      })));
+      assert.strictEqual(findDispatchedEvent('removeTimer').detail.timer, comp);
     });
 
     it('ignores players resuming timers paused by the system', () => {

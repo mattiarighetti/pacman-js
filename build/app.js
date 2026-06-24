@@ -269,6 +269,201 @@ class CharacterUtil {
 }
 
 
+class FirebaseLeaderboard {
+  static get COLLECTION_NAME() {
+    return 'leaderboards';
+  }
+
+  static get CONFIG() {
+    return {
+      apiKey: 'AIzaSyBAz_j5kPjSqKrWSyouFST6ikR8UqBf2qo',
+      authDomain: 'pay-man-nexidigital.firebaseapp.com',
+      projectId: 'pay-man-nexidigital',
+      storageBucket: 'pay-man-nexidigital.firebasestorage.app',
+      messagingSenderId: '406474888254',
+      appId: '1:406474888254:web:b755ec639a4889017d6d6f',
+    };
+  }
+
+  static get DEFAULT_LIMIT() {
+    return 20;
+  }
+
+  static get DEFAULT_PLAYER_NAME() {
+    return 'Player Nexi';
+  }
+
+  static get NAME_LIMIT() {
+    return 20;
+  }
+
+  static get SOURCE() {
+    return 'pay-man';
+  }
+
+  static getFirebase() {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    return window.firebase || null;
+  }
+
+  static initialize() {
+    const firebase = FirebaseLeaderboard.getFirebase();
+    if (!firebase) {
+      return null;
+    }
+
+    if (typeof firebase.initializeApp !== 'function') {
+      return null;
+    }
+
+    if (typeof firebase.firestore !== 'function') {
+      return null;
+    }
+
+    if (!Array.isArray(firebase.apps) || firebase.apps.length === 0) {
+      firebase.initializeApp(FirebaseLeaderboard.CONFIG);
+    }
+
+    return firebase;
+  }
+
+  static getFirestore() {
+    const firebase = FirebaseLeaderboard.initialize();
+    if (!firebase) {
+      return null;
+    }
+
+    return firebase.firestore();
+  }
+
+  static isAvailable() {
+    return Boolean(FirebaseLeaderboard.getFirestore());
+  }
+
+  static createDiagnostic(operation, error) {
+    return {
+      operation,
+      collection: FirebaseLeaderboard.COLLECTION_NAME,
+      code: error && error.code ? error.code : 'unknown',
+      message: error && error.message ? error.message : String(error || 'Unknown Firebase error'),
+    };
+  }
+
+  static reportDiagnostic(operation, error) {
+    const diagnostic = FirebaseLeaderboard.createDiagnostic(operation, error);
+    if (typeof window !== 'undefined') {
+      window.firebaseLeaderboardLastError = diagnostic;
+    }
+
+    // eslint-disable-next-line no-console
+    console.warn('Firebase leaderboard error', diagnostic);
+    return diagnostic;
+  }
+
+  static sanitizeName(rawName) {
+    const normalized = String(rawName || '').trim().replace(/\s+/g, ' ');
+    if (!normalized) {
+      return FirebaseLeaderboard.DEFAULT_PLAYER_NAME;
+    }
+
+    return normalized.slice(0, FirebaseLeaderboard.NAME_LIMIT);
+  }
+
+  static normalizeScore(rawScore) {
+    const score = Number(rawScore);
+    if (!Number.isFinite(score) || score < 0) {
+      return 0;
+    }
+
+    return score;
+  }
+
+  static normalizeDate(rawDate) {
+    const date = new Date(rawDate);
+    if (!rawDate || Number.isNaN(date.getTime())) {
+      return new Date().toISOString();
+    }
+
+    return date.toISOString();
+  }
+
+  static normalizeEntry(rawEntry = {}) {
+    return {
+      name: FirebaseLeaderboard.sanitizeName(rawEntry.name),
+      score: FirebaseLeaderboard.normalizeScore(rawEntry.score),
+      date: FirebaseLeaderboard.normalizeDate(rawEntry.date),
+      source: rawEntry.source || FirebaseLeaderboard.SOURCE,
+    };
+  }
+
+  static buildSavePayload(entry, firebase) {
+    const payload = FirebaseLeaderboard.normalizeEntry(entry);
+    const fieldValue = firebase.firestore.FieldValue;
+    if (fieldValue && typeof fieldValue.serverTimestamp === 'function') {
+      payload.createdAt = fieldValue.serverTimestamp();
+    } else {
+      payload.createdAt = payload.date;
+    }
+
+    return payload;
+  }
+
+  static saveGame(entry) {
+    const firebase = FirebaseLeaderboard.initialize();
+    if (!firebase) {
+      FirebaseLeaderboard.reportDiagnostic('saveGame', new Error('Firebase SDK is unavailable'));
+      return Promise.resolve(false);
+    }
+
+    const payload = FirebaseLeaderboard.buildSavePayload(entry, firebase);
+    if (payload.score <= 0) {
+      return Promise.resolve(false);
+    }
+
+    return firebase.firestore()
+      .collection(FirebaseLeaderboard.COLLECTION_NAME)
+      .add(payload)
+      .then(() => true)
+      .catch((error) => {
+        FirebaseLeaderboard.reportDiagnostic('saveGame', error);
+        return false;
+      });
+  }
+
+  static loadTop(limit = FirebaseLeaderboard.DEFAULT_LIMIT) {
+    const db = FirebaseLeaderboard.getFirestore();
+    if (!db) {
+      FirebaseLeaderboard.reportDiagnostic('loadTop', new Error('Firebase SDK is unavailable'));
+      return Promise.resolve([]);
+    }
+
+    return db
+      .collection(FirebaseLeaderboard.COLLECTION_NAME)
+      .orderBy('score', 'desc')
+      .limit(limit)
+      .get()
+      .then((snapshot) => {
+        const entries = [];
+        snapshot.forEach((doc) => {
+          entries.push(FirebaseLeaderboard.normalizeEntry(doc.data()));
+        });
+        return entries;
+      })
+      .catch((error) => {
+        FirebaseLeaderboard.reportDiagnostic('loadTop', error);
+        throw error;
+      });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.FirebaseLeaderboard = FirebaseLeaderboard;
+}
+
+
 /**
  * Local-only leaderboard for the Nexi Pac-Man hackathon edition.
  * Persists a top-5 ranking to localStorage. No network calls.
@@ -1914,8 +2109,10 @@ class Pickup {
       image = 'card_contactless';
     } else if (type === 'otp') {
       return 'url(app/style/graphics/spriteSheets/pickups/otp.svg)';
+    } else if (type === 'pacdot') {
+      return 'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)';
     } else {
-      image = 'payment_dot';
+      return 'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)';
     }
 
     return `url(app/style/graphics/nexi/${image}.svg)`;
@@ -2252,11 +2449,23 @@ class GameCoordinator {
       { points: 5000, message: 'Authorization approved', variant: 'approved' },
       { points: 10000, message: 'ioSi level up', variant: 'level-up' },
     ];
+    this.playerNamePlaceholders = [
+      'Es. Cashback Ninja',
+      'Es. Tap Champion',
+      'Es. POS Wizard',
+      'Es. Bonus Hunter',
+      'Es. Token Runner',
+      'Es. Swipe Master',
+      'Es. Card Combo',
+      'Es. Pixel Payer',
+    ];
     this.currentPlayerName = this.sanitizePlayerName(
       localStorage.getItem('pacmanNexiCurrentPlayer') || 'Player Nexi',
     );
     if (this.playerNameInput) {
-      this.playerNameInput.value = this.currentPlayerName;
+      this.playerNameInput.placeholder = this.playerNamePlaceholders[
+        Math.floor(Math.random() * this.playerNamePlaceholders.length)
+      ];
     }
 
     this.otpBonusPoints = 500;
@@ -2674,7 +2883,6 @@ class GameCoordinator {
         `${imgBase}pickups/powerPellet.svg`,
         `${imgBase}pickups/contactless.svg`,
         `${imgBase}pickups/otp.svg`,
-        'app/style/graphics/nexi/payment_dot.svg',
         'app/style/graphics/nexi/card_contactless.svg',
         'app/style/graphics/nexi/card_coral.svg',
         'app/style/graphics/nexi/card_virtual.svg',
@@ -3469,7 +3677,7 @@ class GameCoordinator {
   saveLeaderboardEntry() {
     const score = Number(this.points || 0);
     if (score <= 0) {
-      return;
+      return Promise.resolve(false);
     }
 
     const playerName = this.sanitizePlayerName(this.currentPlayerName);
@@ -3479,6 +3687,17 @@ class GameCoordinator {
       date: new Date().toISOString(),
     };
 
+    return this.saveRemoteLeaderboardEntry(nextEntry).then((remoteSaved) => {
+      if (remoteSaved) {
+        return true;
+      }
+
+      this.saveLocalLeaderboardEntry(nextEntry);
+      return false;
+    });
+  }
+
+  saveLocalLeaderboardEntry(nextEntry) {
     let leaderboard = [];
     try {
       leaderboard = JSON.parse(
@@ -3497,6 +3716,18 @@ class GameCoordinator {
       'pacmanNexiLeaderboard',
       JSON.stringify(leaderboard.slice(0, 20)),
     );
+    return true;
+  }
+
+  saveRemoteLeaderboardEntry(entry) {
+    if (typeof FirebaseLeaderboard === 'undefined') {
+      return Promise.resolve(false);
+    }
+
+    return Promise.resolve()
+      .then(() => FirebaseLeaderboard.saveGame(entry))
+      .then(Boolean)
+      .catch(() => false);
   }
 
   /**
@@ -4569,7 +4800,9 @@ class GameEngine {
   const originalReset = GameCoordinator.prototype.reset;
   const originalEatGhost = GameCoordinator.prototype.eatGhost;
   const originalSetUiDimensions = GameCoordinator.prototype.setUiDimensions;
+  const originalReturnHomeClick = GameCoordinator.prototype.returnHomeClick;
   const originalSetStyleMeasurements = Pickup.prototype.setStyleMeasurements;
+  const startBootDuration = 1100;
 
   function scheduleFit(gameCoordinator) {
     if (!gameCoordinator || typeof gameCoordinator.fitGameToPosScreen !== 'function') {
@@ -4593,6 +4826,34 @@ class GameEngine {
     });
   }
 
+  function setStartTerminalMessage(gameCoordinator, topLine, bottomLine) {
+    if (!gameCoordinator || !gameCoordinator.gameStartButton) {
+      return;
+    }
+
+    const screenLines = gameCoordinator.gameStartButton.querySelectorAll('.atm-screen-line');
+
+    if (screenLines[0] && typeof topLine === 'string') {
+      screenLines[0].textContent = topLine;
+    }
+
+    if (screenLines[1] && typeof bottomLine === 'string') {
+      screenLines[1].textContent = bottomLine;
+    }
+  }
+
+  function resetStartTerminal(gameCoordinator) {
+    if (!gameCoordinator || !gameCoordinator.gameStartButton) {
+      return;
+    }
+
+    const { gameStartButton } = gameCoordinator;
+
+    gameStartButton.classList.remove('game-start--booting');
+    gameStartButton.disabled = false;
+    setStartTerminalMessage(gameCoordinator, 'INSERT CARD', '▶ PRESS PLAY');
+  }
+
   Pickup.prototype.determineImage = function determineNexiImage(type, points) {
     let image;
 
@@ -4602,8 +4863,12 @@ class GameEngine {
       image = this.powerPelletVariant || 'power_card_blue';
     } else if (type === 'contactless') {
       image = 'card_contactless';
+    } else if (type === 'otp') {
+      return 'url(app/style/graphics/spriteSheets/pickups/otp.svg)';
+    } else if (type === 'pacdot') {
+      return 'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)';
     } else {
-      image = 'payment_dot';
+      return 'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)';
     }
 
     return `url(app/style/graphics/nexi/${image}.svg)`;
@@ -4859,6 +5124,15 @@ class GameEngine {
   };
 
   GameCoordinator.prototype.startButtonClick = function patchedStartButtonClick() {
+    if (this.startBooting) {
+      return;
+    }
+
+    this.startBooting = true;
+    this.gameStartButton.classList.add('game-start--booting');
+    this.gameStartButton.disabled = true;
+    setStartTerminalMessage(this, 'READING CARD', 'BOOTING POS...');
+
     if (this.demoMode) {
       this.stopAttractMode();
       this.setStatus('Carta autorizzata. Sessione di pagamento avviata.');
@@ -4867,7 +5141,16 @@ class GameEngine {
       this.setStatus('Sessione live. Ferma i frodatori.');
     }
 
-    originalStartButtonClick.call(this);
+    window.setTimeout(() => {
+      this.startBooting = false;
+      originalStartButtonClick.call(this);
+    }, startBootDuration);
+  };
+
+  GameCoordinator.prototype.returnHomeClick = function patchedReturnHomeClick() {
+    originalReturnHomeClick.call(this);
+    this.startBooting = false;
+    resetStartTerminal(this);
   };
 
   GameCoordinator.prototype.powerUp = function patchedPowerUp() {

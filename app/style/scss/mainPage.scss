@@ -358,6 +358,7 @@ body {
   border: none;
   box-shadow: none;
   cursor: pointer;
+  margin-bottom: 1rem;
   outline: none;
   padding: 0;
   width: auto;
@@ -374,10 +375,6 @@ body {
   &:disabled {
     cursor: default;
     opacity: 0.6;
-
-    .atm-card {
-      animation-play-state: paused;
-    }
   }
 }
 
@@ -468,6 +465,28 @@ body {
   width: 90px;
 }
 
+.game-start--booting {
+  .atm-body {
+    animation: atm-body-boot 1.1s ease-out forwards;
+  }
+
+  .atm-screen {
+    animation: atm-screen-boot 1.1s steps(5) forwards;
+  }
+
+  .atm-screen-line {
+    animation: atm-screen-text-boot 1.1s steps(4) forwards;
+  }
+
+  .atm-card {
+    animation: atm-card-insert 1.1s cubic-bezier(0.2, 0.85, 0.2, 1) forwards;
+  }
+
+  .atm-pad .atm-key-dot {
+    animation: atm-key-flash 0.28s steps(2) 3;
+  }
+}
+
 @keyframes atm-card-slide {
   0%   { transform: translateX(200px); }
   10%  { transform: translateX(200px); }
@@ -475,6 +494,85 @@ body {
   65%  { transform: translateX(-40px); }
   95%  { transform: translateX(200px); }
   100% { transform: translateX(200px); }
+}
+
+@keyframes atm-card-insert {
+  0% {
+    transform: translateX(200px);
+  }
+
+  55% {
+    transform: translateX(-28px);
+  }
+
+  72% {
+    transform: translateX(-18px);
+  }
+
+  100% {
+    transform: translateX(-160px);
+  }
+}
+
+@keyframes atm-screen-boot {
+  0%,
+  20% {
+    background: #031203;
+    box-shadow: inset 0 0 6px #00330070;
+  }
+
+  35% {
+    background: #0b2f0b;
+    box-shadow: inset 0 0 10px #33ff6688;
+  }
+
+  100% {
+    background: #123f17;
+    box-shadow: inset 0 0 14px #5eff8b99;
+  }
+}
+
+@keyframes atm-screen-text-boot {
+  0%,
+  20% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes atm-key-flash {
+  0%,
+  100% {
+    background: #07103a;
+  }
+
+  50% {
+    background: #1bebc2;
+  }
+}
+
+@keyframes atm-body-boot {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  30% {
+    transform: translateY(-1px) scale(1.01);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 .atm-pad {
@@ -496,8 +594,11 @@ body {
   box-shadow: 0 6px 0 #a07000;
   box-sizing: border-box;
   color: #ffd054;
-  display: block;
+  align-items: center;
+  display: flex;
   font-size: 0.68rem;
+  gap: 0.55rem;
+  justify-content: center;
   letter-spacing: 0.1em;
   outline: none;
   padding: 0.78rem 1rem;
@@ -515,6 +616,26 @@ body {
     box-shadow: 0 2px 0 #a07000;
     transform: translateY(4px);
   }
+}
+
+.menu-action-icon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 20px;
+  font-size: 20px;
+  height: 20px;
+  justify-content: center;
+  letter-spacing: 0;
+  line-height: 20px;
+  width: 20px;
+}
+
+.menu-action-icon.material-icons {
+  display: inline-flex;
+  font-size: 20px;
+  height: 20px;
+  line-height: 20px;
+  width: 20px;
 }
 
 .options-link {
