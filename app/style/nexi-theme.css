@@ -118,12 +118,12 @@ body {
   display: flex;
   flex-direction: column;
   margin: 0 auto;
-  max-width: 600px;
+  max-width: 60vw;
   max-height: calc(100vh - 2rem);
   min-height: calc(100vh - 2rem);
   padding: 1rem 1rem 0.9rem;
   position: relative;
-  width: 100%;
+  width: 60vw;
 }
 
 .pos-controls {
@@ -358,8 +358,9 @@ body {
     border-radius: 2rem;
     max-height: calc(100vh - 1.5rem);
     min-height: calc(100vh - 1.5rem);
+    max-width: 60vw;
     padding: 0.75rem 0.75rem 0.85rem;
-    width: 100%;
+    width: 60vw;
   }
 
   .pos-controls {
@@ -379,9 +380,10 @@ body {
 
 @media only screen and (max-width: 600px) {
   .pos-shell {
+    max-width: 60vw;
     max-height: calc(100vh - 1rem);
     min-height: calc(100vh - 1rem);
-    width: 88vw;
+    width: 60vw;
   }
 
   .pos-controls button {

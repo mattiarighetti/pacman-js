@@ -149,19 +149,14 @@
     }
 
     const viewportMargin = window.innerWidth <= 600 ? 16 : 32;
-    const maxShellWidth = Math.max(window.innerWidth - viewportMargin, 320);
-    const shellHeight = posShell.clientHeight;
-    const shellChromeHeight = Math.max(posShell.clientHeight - screen.clientHeight, 0);
-    const shellChromeWidth = Math.max(posShell.clientWidth - screen.clientWidth, 0);
-    const targetScreenHeight = Math.max(shellHeight - shellChromeHeight, 0);
-    const desiredScreenWidth = targetScreenHeight * (contentWidth / contentHeight);
-    const desiredShellWidth = Math.min(desiredScreenWidth + shellChromeWidth, maxShellWidth);
-
-    posShell.style.width = `${Math.max(desiredShellWidth, 320)}px`;
+    posShell.style.width = '';
 
     const screenWidth = screen.clientWidth;
     const screenHeight = screen.clientHeight;
-    const fitPadding = Math.max(Math.min(screenWidth, screenHeight) * 0.015, 4);
+    const fitPadding = Math.max(
+      Math.min(screenWidth, screenHeight) * 0.015,
+      window.innerWidth <= 600 ? 3 : 4,
+    );
     const innerWidth = Math.max(screenWidth - (fitPadding * 2), 0);
     const innerHeight = Math.max(screenHeight - (fitPadding * 2), 0);
 
