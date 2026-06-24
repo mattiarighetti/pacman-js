@@ -235,17 +235,17 @@ body {
 }
 
 #row-top {
-  line-height: 0.9;
-  margin-bottom: 0.35rem !important;
+  font-size: 0.78em;
+  line-height: 1;
+  margin-bottom: 0.55rem !important;
 }
 
 #row-top .column > div {
-  transform: scale(0.78);
-  transform-origin: top center;
+  transform: none;
 }
 
 #row-top .column > div:last-child {
-  margin-top: -0.35rem;
+  margin-top: 0.18rem;
 }
 
 .smartpos-side {
