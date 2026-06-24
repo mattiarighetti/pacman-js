@@ -4803,6 +4803,8 @@ class GameEngine {
   const originalReturnHomeClick = GameCoordinator.prototype.returnHomeClick;
   const originalSetStyleMeasurements = Pickup.prototype.setStyleMeasurements;
   const startBootDuration = 1100;
+  const posCardSwipeDelay = 950;
+  const posCardSwipeDuration = 2000;
 
   function scheduleFit(gameCoordinator) {
     if (!gameCoordinator || typeof gameCoordinator.fitGameToPosScreen !== 'function') {
@@ -4852,6 +4854,23 @@ class GameEngine {
     gameStartButton.classList.remove('game-start--booting');
     gameStartButton.disabled = false;
     setStartTerminalMessage(gameCoordinator, 'INSERT CARD', '▶ PRESS PLAY');
+  }
+
+  function playPosCardSwipe(gameCoordinator) {
+    const posShell = gameCoordinator && document.querySelector('.pos-shell');
+
+    if (!posShell) {
+      return;
+    }
+
+    window.clearTimeout(gameCoordinator.posCardSwipeTimeout);
+    posShell.classList.remove('pos-shell--card-swipe');
+    void posShell.offsetWidth;
+    posShell.classList.add('pos-shell--card-swipe');
+
+    gameCoordinator.posCardSwipeTimeout = window.setTimeout(() => {
+      posShell.classList.remove('pos-shell--card-swipe');
+    }, posCardSwipeDuration);
   }
 
   Pickup.prototype.determineImage = function determineNexiImage(type, points) {
@@ -5144,14 +5163,23 @@ class GameEngine {
     window.setTimeout(() => {
       this.startBooting = false;
       originalStartButtonClick.call(this);
+      window.setTimeout(() => {
+        playPosCardSwipe(this);
+      }, posCardSwipeDelay);
     }, startBootDuration);
   };
 
   GameCoordinator.prototype.returnHomeClick = function patchedReturnHomeClick() {
     originalReturnHomeClick.call(this);
     this.startBooting = false;
+    window.clearTimeout(this.posCardSwipeTimeout);
+    const posShell = document.querySelector('.pos-shell');
+    if (posShell) {
+      posShell.classList.remove('pos-shell--card-swipe');
+    }
     resetStartTerminal(this);
   };
+
 
   GameCoordinator.prototype.powerUp = function patchedPowerUp() {
     this.setStatus('Scudo antifrode attivo.');
