@@ -11,11 +11,11 @@
       gtag('config', 'UA-142539004-1');
     </script>
 
-    <link href='build/app.css?v=5' rel='stylesheet'>
-    <link href='app/style/nexi-theme.css?v=3' rel='stylesheet'>
+    <link href='build/app.css?v=8' rel='stylesheet'>
+    <link href='app/style/nexi-theme.css?v=4' rel='stylesheet'>
     <script src='https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js'></script>
     <script src='https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore-compat.js'></script>
-    <script src='build/app.js?v=8'></script>
+    <script src='build/app.js?v=9'></script>
     <link rel='shortcut icon' type='image/svg+xml' href='app/style/graphics/nexi/mini_pos_icon.svg'>
     <link href='https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap' rel='stylesheet'>
     <link href='https://fonts.googleapis.com/icon?family=Material+Icons'
@@ -52,9 +52,6 @@
           <input id='player-name-input' class='player-name-input' type='text' maxlength='20' placeholder='Es. Team Nexi' />
           <button id='game-start' class='game-start' aria-label='Avvia partita'>
             <div class='atm-body'>
-              <div class='atm-top-bar'>
-                <img class='atm-logo' src='https://www.nexi.it/content/dam/nexinew/icone/nexi-logo-white.svg' alt='Nexi'/>
-              </div>
               <div class='atm-screen'>
                 <p class='atm-screen-line'>INSERT CARD</p>
                 <p class='atm-screen-line atm-blink'>&#9658; PRESS PLAY</p>
@@ -75,8 +72,14 @@
               </div>
             </div>
           </button>
-          <button id='home-options-button' class='leaderboard-link options-link' type='button'>⚙ OPZIONI</button>
-          <a href='leaderboard.html' class='leaderboard-link'>&#127942; CLASSIFICA</a>
+          <button id='home-options-button' class='leaderboard-link options-link' type='button'>
+            <span class='menu-action-icon material-icons' aria-hidden='true'>settings</span>
+            <span>OPZIONI</span>
+          </button>
+          <a href='leaderboard.html' class='leaderboard-link'>
+            <span class='menu-action-icon' aria-hidden='true'>&#127942;</span>
+            <span>CLASSIFICA</span>
+          </a>
         </div>
         <div id='home-options-panel' class='home-options-panel'>
           <div class='home-options-dialog options-panel' role='dialog' aria-modal='true' aria-labelledby='home-options-title'>

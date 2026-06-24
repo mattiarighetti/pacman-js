@@ -2410,11 +2410,23 @@ class GameCoordinator {
       { points: 5000, message: 'Authorization approved', variant: 'approved' },
       { points: 10000, message: 'ioSi level up', variant: 'level-up' },
     ];
+    this.playerNamePlaceholders = [
+      'Es. Cashback Ninja',
+      'Es. Tap Champion',
+      'Es. POS Wizard',
+      'Es. Bonus Hunter',
+      'Es. Token Runner',
+      'Es. Swipe Master',
+      'Es. Card Combo',
+      'Es. Pixel Payer',
+    ];
     this.currentPlayerName = this.sanitizePlayerName(
       localStorage.getItem('pacmanNexiCurrentPlayer') || 'Player Nexi',
     );
     if (this.playerNameInput) {
-      this.playerNameInput.value = this.currentPlayerName;
+      this.playerNameInput.placeholder = this.playerNamePlaceholders[
+        Math.floor(Math.random() * this.playerNamePlaceholders.length)
+      ];
     }
 
     this.otpBonusPoints = 500;

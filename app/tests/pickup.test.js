@@ -5,8 +5,28 @@ const Pickup = require('../scripts/pickups/pickup');
 let pickup;
 let pacman;
 let mazeDiv;
+let previousEvent;
+let previousCustomEvent;
+
+const findDispatchedEvent = (type) => global.window.dispatchEvent
+  .getCalls()
+  .map((call) => call.args[0])
+  .find((event) => event.type === type);
 
 beforeEach(() => {
+  previousEvent = global.Event;
+  previousCustomEvent = global.CustomEvent;
+  global.Event = class {
+    constructor(type) {
+      this.type = type;
+    }
+  };
+  global.CustomEvent = class extends global.Event {
+    constructor(type, init = {}) {
+      super(type);
+      this.detail = init.detail;
+    }
+  };
   global.document = {
     createElement: () => ({
       classList: {
@@ -29,6 +49,11 @@ beforeEach(() => {
   };
 
   pickup = new Pickup('pacdot', 8, 1, 1, pacman, mazeDiv);
+});
+
+afterEach(() => {
+  global.Event = previousEvent;
+  global.CustomEvent = previousCustomEvent;
 });
 
 describe('pickup', () => {
@@ -453,14 +478,10 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledWith(
-        new CustomEvent('awardPoints', {
-          detail: {
-            points: pickup.points,
-            type: pickup.type,
-          },
-        }),
-      ));
+      assert.deepStrictEqual(findDispatchedEvent('awardPoints').detail, {
+        points: pickup.points,
+        type: pickup.type,
+      });
     });
 
     it('emits dotEaten event if a pacdot collides with Pacman', () => {
@@ -469,7 +490,7 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledWith(new Event('dotEaten')));
+      assert(findDispatchedEvent('dotEaten'));
     });
 
     it('emits powerUp event if a powerPellet collides with Pacman', () => {
@@ -478,8 +499,8 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledWith(new Event('dotEaten')));
-      assert(global.window.dispatchEvent.calledWith(new Event('powerUp')));
+      assert(findDispatchedEvent('dotEaten'));
+      assert(findDispatchedEvent('powerUp'));
     });
 
     it('emits only awardPoints if a fruit collides with Pacman', () => {
@@ -489,14 +510,10 @@ describe('pickup', () => {
 
       pickup.update();
       assert(global.window.dispatchEvent.calledOnce);
-      assert(global.window.dispatchEvent.calledWith(
-        new CustomEvent('awardPoints', {
-          detail: {
-            points: pickup.points,
-            type: pickup.type,
-          },
-        }),
-      ));
+      assert.deepStrictEqual(findDispatchedEvent('awardPoints').detail, {
+        points: pickup.points,
+        type: pickup.type,
+      });
     });
 
     it('emits no events if an unrecognized item collides with Pacman', () => {
@@ -514,7 +531,7 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledOnceWith(new Event('contactlessMode')));
+      assert.strictEqual(findDispatchedEvent('contactlessMode').type, 'contactlessMode');
     });
 
     it('emits otpMode if an OTP pickup collides with Pacman', () => {
@@ -523,7 +540,7 @@ describe('pickup', () => {
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
-      assert(global.window.dispatchEvent.calledOnceWith(new Event('otpMode')));
+      assert.strictEqual(findDispatchedEvent('otpMode').type, 'otpMode');
     });
 
     it('collects visible pacdots inside the Contactless radius', () => {
@@ -535,7 +552,7 @@ describe('pickup', () => {
 
       pickup.update();
       assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
-      assert(global.window.dispatchEvent.calledWith(new Event('dotEaten')));
+      assert(findDispatchedEvent('dotEaten'));
     });
 
     it('does nothing if shouldCheckForCollision returns FALSE', () => {
