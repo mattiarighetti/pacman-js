@@ -1,0 +1,305 @@
+@import 'variables';
+
+$nexi-blue: #0a1f44;
+$nexi-blue-mid: #234a8f;
+$nexi-bright: #0052cc;
+$nexi-deep: #02061a;
+$nexi-ink: #e8f1ff;
+$nexi-mint: #3fe0c5;
+$nexi-orange: #ff8f00;
+$nexi-pink: #ff6fb3;
+$nexi-red: #e53935;
+$nexi-yellow: #ffd400;
+
+// Brand-reskin of the main page chrome. Gameplay-specific selectors stay
+// in their own files. All overrides are scoped so they do not leak into the
+// existing sprite sheet dimensions.
+
+.overflow-mask.nexi-skin {
+  background: radial-gradient(circle at 50% 30%, $nexi-blue 0%, $nexi-deep 70%);
+  color: $white;
+}
+
+// Splash and main menu
+.nexi-logo-tag {
+  background: $white;
+  border-radius: 4px;
+  display: inline-block;
+  font-family: 'Press Start 2P', sans-serif;
+  letter-spacing: 2px;
+  padding: 8px 14px;
+}
+
+.nexi-logo-tag > span {
+  color: $nexi-blue;
+  font-size: 20px;
+}
+
+.nexi-tagline {
+  color: $nexi-ink;
+  letter-spacing: 3px;
+  margin-top: 8px;
+}
+
+.nexi-insert-coin {
+  animation: blink 1.2s infinite;
+  color: $nexi-mint;
+  letter-spacing: 3px;
+  margin-top: 8px;
+}
+
+.main-menu-container.nexi-skin {
+  .game-start {
+    background-color: $nexi-yellow;
+    border: 4px solid $white;
+    box-shadow: 5px 5px $nexi-red;
+    color: $nexi-blue;
+    font-size: 36px;
+    letter-spacing: 4px;
+    padding: 18px 28px;
+  }
+}
+
+.nexi-secret-hint {
+  color: $nexi-ink;
+  font-size: 10px;
+  letter-spacing: 3px;
+  margin-top: 14px;
+}
+
+// Header buttons + pause label
+.paused-text.nexi-skin {
+  background: rgba(2, 6, 26, 0.6);
+  color: $nexi-mint;
+  font-size: 36px;
+  letter-spacing: 6px;
+  text-shadow: 0 0 14px $nexi-mint;
+}
+
+// In-game HUD labels
+.row.top {
+  .label {
+    color: $nexi-ink;
+    letter-spacing: 4px;
+  }
+
+  .label._accent {
+    color: $nexi-mint;
+  }
+
+  .score {
+    color: $nexi-yellow;
+    font-size: 28px;
+  }
+
+  .score._accent {
+    color: $nexi-mint;
+  }
+}
+
+.extra-lives.nexi-skin .nexi-life {
+  background: $nexi-yellow;
+  border-radius: 50%;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 60%, 75% 60%, 75% 100%, 25% 100%, 25% 60%, 0% 60%);
+  display: inline-block;
+  height: 18px;
+  margin-right: 6px;
+  width: 18px;
+}
+
+.fruit-display .fruit-chip {
+  border-radius: 4px;
+  color: $nexi-deep;
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-left: 4px;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.fruit-display .fruit-chip.pos { background: $nexi-mint; }
+.fruit-display .fruit-chip.crd { background: $nexi-bright; color: $white; }
+.fruit-display .fruit-chip.wlt { background: $nexi-pink; }
+.fruit-display .fruit-chip.qr  { background: $nexi-orange; }
+.fruit-display .fruit-chip.tkn { background: $nexi-yellow; }
+
+// Floating arcade pop texts
+.nexi-pop {
+  background: rgba(2, 6, 26, 0.85);
+  border: 2px solid $nexi-mint;
+  border-radius: 6px;
+  color: $nexi-mint;
+  font-family: 'Press Start 2P', sans-serif;
+  letter-spacing: 4px;
+  padding: 8px 14px;
+  position: absolute;
+  text-shadow: 0 0 8px rgba(63, 224, 197, 0.6);
+  z-index: 6;
+}
+
+.nexi-pop.warning {
+  border-color: $nexi-red;
+  color: $nexi-red;
+  text-shadow: 0 0 8px rgba(229, 57, 53, 0.5);
+}
+
+.nexi-pop.gold {
+  border-color: $nexi-yellow;
+  color: $nexi-yellow;
+  text-shadow: 0 0 8px rgba(255, 212, 0, 0.6);
+}
+
+// Pacman contactless aura when the boost is active
+.pacman.contactless-aura::before,
+.pacman-arrow.contactless-aura::before {
+  border: 2px dashed $nexi-mint;
+  border-radius: 50%;
+  content: '';
+  display: block;
+  height: 180%;
+  left: -40%;
+  opacity: 0.7;
+  position: absolute;
+  top: -40%;
+  width: 180%;
+}
+
+.pacman.contactless-aura::after {
+  border: 1px dashed $nexi-mint;
+  border-radius: 50%;
+  content: '';
+  display: block;
+  height: 260%;
+  left: -80%;
+  opacity: 0.4;
+  position: absolute;
+  top: -80%;
+  width: 260%;
+}
+
+// Anti-fraud skin on the ghosts
+.ghost.antifraud {
+  filter: hue-rotate(150deg) saturate(1.2);
+}
+
+.ghost.antifraud::before {
+  background: $nexi-red;
+  border-radius: 4px;
+  color: $white;
+  content: '!';
+  font-family: 'Press Start 2P', sans-serif;
+  font-size: 14px;
+  padding: 2px 6px;
+  position: absolute;
+  right: -8px;
+  top: -8px;
+}
+
+// Game-over panel
+.game-over-overlay.nexi-skin {
+  background: rgba(2, 6, 26, 0.92);
+  color: $white;
+  height: 100vh;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100vw;
+  z-index: 6;
+}
+
+.game-over-overlay.nexi-skin .decline-title {
+  color: $nexi-red;
+  font-size: 42px;
+  letter-spacing: 6px;
+}
+
+.game-over-overlay.nexi-skin .score-card {
+  background: $nexi-blue;
+  border: 2px solid $nexi-bright;
+  border-radius: 10px;
+  padding: 18px 24px;
+}
+
+.game-over-overlay.nexi-skin .score-card .score-value {
+  color: $nexi-yellow;
+  font-size: 32px;
+}
+
+.achievement-chip {
+  border-radius: 6px;
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin: 4px;
+  padding: 8px 12px;
+}
+
+.achievement-chip.mint   { background: $nexi-mint;   color: $nexi-deep; }
+.achievement-chip.gold   { background: $nexi-yellow; color: $nexi-deep; }
+.achievement-chip.pink   { background: $nexi-pink;   color: $nexi-deep; }
+
+.nexi-button {
+  background: $nexi-yellow;
+  border: 3px solid $white;
+  border-radius: 8px;
+  box-shadow: 4px 4px $nexi-red;
+  color: $nexi-blue;
+  cursor: pointer;
+  font-family: 'Press Start 2P', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  margin: 8px;
+  padding: 12px 24px;
+}
+
+.nexi-button.ghost {
+  background: transparent;
+  border-color: $nexi-mint;
+  box-shadow: 4px 4px rgba(63, 224, 197, 0.3);
+  color: $nexi-mint;
+}
+
+// Leaderboard
+.leaderboard-overlay.nexi-skin {
+  background: rgba(2, 6, 26, 0.95);
+  color: $white;
+  height: 100vh;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100vw;
+  z-index: 6;
+}
+
+.leaderboard-overlay.nexi-skin table {
+  border-collapse: collapse;
+  margin: 0 auto;
+  width: 80%;
+}
+
+.leaderboard-overlay.nexi-skin th,
+.leaderboard-overlay.nexi-skin td {
+  border-bottom: 1px solid $nexi-blue-mid;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.leaderboard-overlay.nexi-skin tr.self {
+  border: 2px solid $nexi-yellow;
+  color: $nexi-yellow;
+}
+
+.leaderboard-overlay.nexi-skin .shield-chip {
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 4px 8px;
+}
+
+.shield-chip.contactless { background: $nexi-mint;   color: $nexi-deep; }
+.shield-chip.pos         { background: $nexi-bright; color: $white; }
+.shield-chip.wallet      { background: $nexi-pink;   color: $nexi-deep; }
+.shield-chip.qr          { background: $nexi-orange; color: $nexi-deep; }
+.shield-chip.token       { background: $nexi-yellow; color: $nexi-deep; }

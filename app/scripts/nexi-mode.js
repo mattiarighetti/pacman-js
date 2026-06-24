@@ -50,6 +50,8 @@
       image = nexiFruitImages[points] || 'card_contactless';
     } else if (type === 'powerPellet') {
       image = this.powerPelletVariant || 'power_card_blue';
+    } else if (type === 'contactless') {
+      image = 'card_contactless';
     } else {
       image = 'payment_dot';
     }
