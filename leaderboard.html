@@ -9,8 +9,10 @@
         --nexi-blue: #2d32aa;
         --nexi-dark: #0a1248;
         --nexi-accent: #36d2c0;
+        --nexi-yellow: #ffd400;
+        --pixel-black: #02061a;
         --text-light: #f3f6ff;
-        --surface: rgba(8, 14, 54, 0.78);
+        --surface: #08123f;
       }
 
       * {
@@ -18,47 +20,61 @@
       }
 
       body {
-        align-items: center;
         background:
-          radial-gradient(circle at 12% 18%, rgba(113, 130, 255, 0.45), transparent 35%),
-          radial-gradient(circle at 83% 82%, rgba(54, 210, 192, 0.35), transparent 36%),
-          linear-gradient(150deg, #0b1140 0%, var(--nexi-blue) 46%, #060a22 100%);
+          linear-gradient(180deg, #1723a6 0%, var(--nexi-blue) 42%, #08103d 100%);
         color: var(--text-light);
-        display: flex;
         font-family: 'Press Start 2P', sans-serif;
-        justify-content: center;
         margin: 0;
         min-height: 100vh;
-        padding: 1.25rem;
+        position: relative;
+      }
+
+      body::before {
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 8px 8px;
+        content: "";
+        inset: 0;
+        opacity: 0.45;
+        pointer-events: none;
+        position: fixed;
+        z-index: 0;
       }
 
       .board {
-        backdrop-filter: blur(12px);
-        background: var(--surface);
-        border: 1px solid rgba(255, 255, 255, 0.24);
-        border-radius: 26px;
-        box-shadow: 0 22px 80px rgba(7, 12, 42, 0.55);
-        max-width: 980px;
-        padding: 1.35rem;
-        width: min(95vw, 980px);
+        min-height: 100vh;
+        padding: 2rem clamp(1rem, 4vw, 3rem);
+        position: relative;
+        width: 100%;
+        z-index: 1;
       }
 
       .board-header {
         align-items: center;
+        border: 4px solid var(--nexi-accent);
+        box-shadow: 6px 6px 0 var(--pixel-black);
         display: flex;
         flex-wrap: wrap;
         gap: 1rem;
         justify-content: space-between;
-        margin-bottom: 1.2rem;
-      }
-
-      .brand-logo {
-        height: 28px;
+        margin: 0 auto 1.5rem;
+        max-width: 1100px;
+        padding: 1rem;
       }
 
       .board-title {
+        color: var(--nexi-yellow);
         font-size: clamp(1rem, 2.4vw, 1.9rem);
+        line-height: 1.25;
         margin: 0;
+        text-shadow:
+          3px 0 var(--pixel-black),
+          0 3px var(--pixel-black),
+          -3px 0 var(--pixel-black),
+          0 -3px var(--pixel-black),
+          0 0 12px rgba(54, 210, 192, 0.55);
+        text-transform: uppercase;
       }
 
       .board-subtitle {
@@ -66,6 +82,7 @@
         font-size: 0.65rem;
         line-height: 1.5;
         margin: 0.6rem 0 0;
+        max-width: 62ch;
       }
 
       .board-actions {
@@ -74,31 +91,65 @@
       }
 
       .btn {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.45);
-        border-radius: 12px;
+        background: #0a164f;
+        border: 3px solid var(--nexi-accent);
+        border-radius: 3px;
+        box-shadow: 4px 4px 0 var(--pixel-black);
         color: var(--text-light);
         cursor: pointer;
         font-family: inherit;
         font-size: 0.6rem;
         padding: 0.65rem 0.85rem;
         text-decoration: none;
+        transition:
+          background 0.16s ease-out,
+          border-color 0.16s ease-out,
+          box-shadow 0.16s ease-out,
+          color 0.16s ease-out,
+          transform 0.16s ease-out;
       }
 
       .btn:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: #102381;
+        transform: translate(-1px, -1px);
       }
 
       .btn-primary {
-        background: linear-gradient(120deg, #ffd054 0%, #ffdf8f 100%);
-        border-color: #16205f;
+        background: var(--nexi-yellow);
+        border-color: var(--text-light);
+        box-shadow: 4px 4px 0 #e53935;
         color: #0a154f;
       }
 
+      .btn-primary:hover,
+      .btn-primary:focus-visible {
+        background: #ffec70;
+        border-color: #8ffff2;
+        box-shadow:
+          4px 4px 0 #e53935,
+          0 0 0 3px var(--pixel-black),
+          0 0 14px rgba(54, 210, 192, 0.7);
+        color: #06103d;
+        outline: 2px solid #8ffff2;
+        outline-offset: 3px;
+        transform: translate(-2px, -2px);
+      }
+
+      .btn-primary:active {
+        box-shadow: 2px 2px 0 #e53935;
+        transform: translate(2px, 2px);
+      }
+
       .table-wrap {
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 16px;
-        overflow: hidden;
+        background: var(--surface);
+        border: 4px solid var(--nexi-accent);
+        border-radius: 3px;
+        box-shadow:
+          7px 7px 0 var(--pixel-black),
+          inset 0 0 0 3px #101e72;
+        margin: 0 auto;
+        max-width: 1100px;
+        overflow-x: auto;
       }
 
       table {
@@ -109,39 +160,56 @@
       th,
       td {
         font-size: 0.62rem;
-        padding: 0.95rem 0.75rem;
+        padding: 1rem 0.8rem;
         text-align: left;
       }
 
       th {
-        background: rgba(54, 210, 192, 0.15);
-        color: #c8fffa;
+        background: #06103d;
+        border-bottom: 4px solid var(--nexi-accent);
+        color: var(--nexi-yellow);
+        text-transform: uppercase;
+      }
+
+      td {
+        border-bottom: 2px solid #172888;
       }
 
       tr:nth-child(even) td {
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(54, 210, 192, 0.08);
+      }
+
+      tbody tr:hover td {
+        background: rgba(255, 212, 0, 0.14);
       }
 
       .rank-badge {
         align-items: center;
-        background: rgba(255, 255, 255, 0.12);
-        border-radius: 999px;
+        background: var(--nexi-yellow);
+        border: 3px solid var(--pixel-black);
+        border-radius: 2px;
+        box-shadow: 2px 2px 0 #e53935;
+        color: var(--pixel-black);
         display: inline-flex;
-        height: 24px;
+        height: 28px;
         justify-content: center;
-        width: 24px;
+        width: 32px;
       }
 
       .score-cell {
-        color: #ffe380;
+        color: var(--nexi-yellow);
+        text-shadow: 2px 2px 0 var(--pixel-black);
       }
 
       .empty {
         color: rgba(227, 232, 255, 0.9);
         font-size: 0.66rem;
         line-height: 1.7;
-        padding: 1.25rem;
+        margin: 0 auto;
+        max-width: 1100px;
+        padding: 1.25rem 0;
         text-align: center;
+        text-shadow: 2px 2px 0 var(--pixel-black);
       }
 
       @media (max-width: 760px) {
@@ -171,11 +239,6 @@
     <main class="board">
       <div class="board-header">
         <div>
-          <img
-            class="brand-logo"
-            src="https://www.nexi.it/content/dam/nexinew/icone/nexi-logo-white.svg"
-            alt="Nexi"
-          />
           <h1 class="board-title">Pacman Leaderboard</h1>
           <p class="board-subtitle">Classifica live dei migliori score accumulati durante l'hackathon.</p>
         </div>

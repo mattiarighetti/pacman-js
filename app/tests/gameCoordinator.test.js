@@ -195,6 +195,9 @@ describe('gameCoordinator', () => {
       const restartGameButton = {
         addEventListener: sinon.fake(),
       };
+      const returnHomeButton = {
+        addEventListener: sinon.fake(),
+      };
       global.document.getElementById = (id) => {
         if (id === 'resume-game') {
           return resumeGameButton;
@@ -204,14 +207,20 @@ describe('gameCoordinator', () => {
           return restartGameButton;
         }
 
+        if (id === 'return-home') {
+          return returnHomeButton;
+        }
+
         return defaultElement();
       };
 
       const newComp = new GameCoordinator();
       assert(resumeGameButton.addEventListener.calledWith('click'));
       assert(restartGameButton.addEventListener.calledWith('click'));
+      assert(returnHomeButton.addEventListener.calledWith('click'));
       assert.strictEqual(typeof newComp.resumeGameButton.addEventListener, 'function');
       assert.strictEqual(typeof newComp.restartGameButton.addEventListener, 'function');
+      assert.strictEqual(typeof newComp.returnHomeButton.addEventListener, 'function');
 
       global.document.getElementById = originalGetElementById;
     });
@@ -254,6 +263,46 @@ describe('gameCoordinator', () => {
       comp.startButtonClick();
       assert(comp.init.called);
       assert(!comp.firstGame);
+    });
+
+    it('restarts a stopped engine after returning home', () => {
+      comp.init = sinon.fake();
+      comp.reset = sinon.fake(() => {
+        comp.entityList = ['reset-entity'];
+      });
+      comp.startGameplay = sinon.fake();
+      comp.firstGame = false;
+      comp.gameEngine = {
+        entityList: [],
+        start: sinon.fake(),
+        started: false,
+      };
+
+      comp.startButtonClick();
+      assert(!comp.init.called);
+      assert.deepEqual(comp.gameEngine.entityList, ['reset-entity']);
+      assert(comp.gameEngine.start.called);
+      assert(comp.startGameplay.calledWith(true));
+    });
+
+    it('does not restart an engine that is already started', () => {
+      comp.init = sinon.fake();
+      comp.reset = sinon.fake(() => {
+        comp.entityList = ['reset-entity'];
+      });
+      comp.startGameplay = sinon.fake();
+      comp.firstGame = false;
+      comp.gameEngine = {
+        entityList: [],
+        start: sinon.fake(),
+        started: true,
+      };
+
+      comp.startButtonClick();
+      assert(!comp.init.called);
+      assert.deepEqual(comp.gameEngine.entityList, ['reset-entity']);
+      assert(!comp.gameEngine.start.called);
+      assert(comp.startGameplay.calledWith(true));
     });
   });
 
@@ -355,6 +404,68 @@ describe('gameCoordinator', () => {
       comp.restartGameClick();
       assert(comp.gameEngine.start.called);
       assert(comp.startGameplay.calledWith(true));
+    });
+  });
+
+  describe('returnHomeClick', () => {
+    beforeEach(() => {
+      comp.soundManager.stopAmbience = sinon.fake();
+      comp.saveLeaderboardEntry = sinon.fake();
+      comp.reset = sinon.fake(() => {
+        comp.entityList = ['reset-entity'];
+      });
+      comp.gameUi.style.filter = 'blur(5px)';
+      comp.pausedText.style.visibility = 'visible';
+      comp.pauseButton.innerHTML = 'play_arrow';
+      comp.leftCover.style.left = '-50%';
+      comp.rightCover.style.right = '-50%';
+      comp.mainMenu.style.opacity = 0;
+      comp.mainMenu.style.visibility = 'hidden';
+      comp.gameStartButton.disabled = true;
+    });
+
+    it('does nothing before the game engine exists', () => {
+      comp.gameEngine = undefined;
+
+      comp.returnHomeClick();
+      assert(!comp.reset.called);
+      assert(!comp.saveLeaderboardEntry.called);
+    });
+
+    it('abandons the current game and returns to the main menu', () => {
+      comp.gameEngine = {
+        entityList: [],
+        start: sinon.fake(),
+        stop: sinon.fake(),
+      };
+
+      comp.returnHomeClick();
+      assert(comp.gameEngine.stop.called);
+      assert(!comp.gameEngine.start.called);
+      assert(comp.soundManager.stopAmbience.called);
+      assert.strictEqual(comp.gameUi.style.filter, 'unset');
+      assert.strictEqual(comp.pausedText.style.visibility, 'hidden');
+      assert.strictEqual(comp.pauseButton.innerHTML, 'pause');
+      assert(comp.reset.called);
+      assert.deepEqual(comp.gameEngine.entityList, ['reset-entity']);
+      assert.strictEqual(comp.leftCover.style.left, '0');
+      assert.strictEqual(comp.rightCover.style.right, '0');
+      assert.strictEqual(comp.mainMenu.style.opacity, 1);
+      assert.strictEqual(comp.mainMenu.style.visibility, 'visible');
+      assert.strictEqual(comp.gameStartButton.disabled, false);
+      assert(!comp.saveLeaderboardEntry.called);
+    });
+
+    it('returns home even if the engine has no stop method', () => {
+      comp.gameEngine = {
+        entityList: [],
+        start: sinon.fake(),
+      };
+
+      comp.returnHomeClick();
+      assert(comp.reset.called);
+      assert(!comp.gameEngine.start.called);
+      assert.strictEqual(comp.mainMenu.style.visibility, 'visible');
     });
   });
 
@@ -525,6 +636,10 @@ describe('gameCoordinator', () => {
 
       comp.drawMaze(mazeArray, entityList);
       assert.strictEqual(
+        comp.gameBaseWidth,
+        comp.scaledTileSize * 28,
+      );
+      assert.strictEqual(
         comp.mazeDiv.style.height,
         `${comp.scaledTileSize * 31}px`,
       );
@@ -534,6 +649,10 @@ describe('gameCoordinator', () => {
       );
       assert.strictEqual(
         comp.gameUi.style.width,
+        `${comp.scaledTileSize * 28}px`,
+      );
+      assert.strictEqual(
+        comp.gameUi.style.minWidth,
         `${comp.scaledTileSize * 28}px`,
       );
       assert.strictEqual(entityList.length, 2);
@@ -2120,6 +2239,40 @@ describe('gameCoordinator', () => {
 
       clock.tick(1000);
       assert(comp.mazeDiv.removeChild.called);
+      assert.deepStrictEqual(comp.displayTextItems, []);
+
+      comp.displayText({ left: 10, top: 25 }, 200, 1000, 48);
+      assert.strictEqual(comp.displayTextItems.length, 1);
+    });
+
+    it('clears temporary text before its timer expires', () => {
+      comp.mazeDiv = {
+        appendChild: sinon.fake(),
+        removeChild: sinon.fake(),
+      };
+
+      comp.displayText({ left: 10, top: 25 }, 'ready', 1000, 48);
+      assert.strictEqual(comp.displayTextItems.length, 1);
+
+      comp.clearDisplayText();
+      assert(comp.mazeDiv.removeChild.called);
+      assert.deepStrictEqual(comp.displayTextItems, []);
+
+      clock.tick(1000);
+      assert.strictEqual(comp.mazeDiv.removeChild.callCount, 1);
+    });
+
+    it('safely ignores missing and detached text items', () => {
+      comp.mazeDiv = {
+        appendChild: sinon.fake(),
+        removeChild: sinon.fake(),
+      };
+
+      comp.removeDisplayTextItem();
+      comp.removeDisplayTextItem({ attached: false });
+      comp.removeDisplayTextItem({ attached: true });
+
+      assert.strictEqual(comp.mazeDiv.removeChild.called, false);
     });
   });
 

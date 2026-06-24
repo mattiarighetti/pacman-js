@@ -141,10 +141,24 @@
     this.gameUi.style.transform = 'scale(1)';
     this.gameUi.style.left = '0px';
     this.gameUi.style.top = '0px';
-    const contentWidth = this.gameUi.offsetWidth;
-    const contentHeight = this.gameUi.offsetHeight;
+    this.gameUi.style.height = 'auto';
+    this.gameUi.style.minHeight = '0px';
+    if (this.gameBaseWidth) {
+      this.gameUi.style.minWidth = `${this.gameBaseWidth}px`;
+      this.gameUi.style.width = `${this.gameBaseWidth}px`;
+    }
 
-    if (!contentWidth || !contentHeight) {
+    const baseContentWidth = Math.max(
+      this.gameBaseWidth || 0,
+      this.gameUi.offsetWidth,
+      this.gameUi.scrollWidth,
+    );
+    const contentHeight = Math.max(
+      this.gameUi.offsetHeight,
+      this.gameUi.scrollHeight,
+    );
+
+    if (!baseContentWidth || !contentHeight) {
       return;
     }
 
@@ -160,12 +174,17 @@
     const innerHeight = Math.max(screenHeight - (fitPadding * 2), 0);
 
     const scale = Math.min(
-      innerWidth / contentWidth,
+      innerWidth / baseContentWidth,
       innerHeight / contentHeight,
     );
+    const fittedContentWidth = Math.max(
+      baseContentWidth,
+      Math.floor(innerWidth / scale),
+    );
 
+    this.gameUi.style.width = `${fittedContentWidth}px`;
     this.gameUi.style.transform = `scale(${scale})`;
-    this.gameUi.style.left = `${(screenWidth - (contentWidth * scale)) / 2}px`;
+    this.gameUi.style.left = `${(screenWidth - (fittedContentWidth * scale)) / 2}px`;
     this.gameUi.style.top = `${(screenHeight - (contentHeight * scale)) / 2}px`;
   };
 

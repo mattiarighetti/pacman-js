@@ -2106,6 +2106,7 @@ class GameCoordinator {
     this.gameStartButton = document.getElementById('game-start');
     this.resumeGameButton = document.getElementById('resume-game');
     this.restartGameButton = document.getElementById('restart-game');
+    this.returnHomeButton = document.getElementById('return-home');
     this.playerNameInput = document.getElementById('player-name-input');
     this.pauseButton = document.getElementById('pause-button');
     this.soundButton = document.getElementById('sound-button');
@@ -2219,6 +2220,10 @@ class GameCoordinator {
       'click',
       this.restartGameClick.bind(this),
     );
+    this.returnHomeButton.addEventListener(
+      'click',
+      this.returnHomeClick.bind(this),
+    );
     this.pauseButton.addEventListener('click', this.handlePauseKey.bind(this));
     this.soundButton.addEventListener(
       'click',
@@ -2302,6 +2307,11 @@ class GameCoordinator {
     if (this.firstGame) {
       this.firstGame = false;
       this.init();
+    } else if (this.gameEngine) {
+      this.gameEngine.entityList = this.entityList;
+      if (!this.gameEngine.started) {
+        this.gameEngine.start();
+      }
     }
     this.startGameplay(true);
   }
@@ -2331,9 +2341,7 @@ class GameCoordinator {
     }
 
     this.soundManager.stopAmbience();
-    this.gameUi.style.filter = 'unset';
-    this.pausedText.style.visibility = 'hidden';
-    this.pauseButton.innerHTML = 'pause';
+    this.hidePauseMenu();
 
     this.reset();
     this.gameEngine.entityList = this.entityList;
@@ -2342,13 +2350,43 @@ class GameCoordinator {
   }
 
   /**
+   * Abandons the current game and returns to the main menu
+   */
+  returnHomeClick() {
+    if (!this.gameEngine) {
+      return;
+    }
+
+    if (typeof this.gameEngine.stop === 'function') {
+      this.gameEngine.stop();
+    }
+
+    this.soundManager.stopAmbience();
+    this.hidePauseMenu();
+    this.reset();
+    this.gameEngine.entityList = this.entityList;
+    this.leftCover.style.left = '0';
+    this.rightCover.style.right = '0';
+    this.mainMenu.style.opacity = 1;
+    this.mainMenu.style.visibility = 'visible';
+    this.gameStartButton.disabled = false;
+  }
+
+  /**
+   * Hides the pause menu chrome
+   */
+  hidePauseMenu() {
+    this.gameUi.style.filter = 'unset';
+    this.pausedText.style.visibility = 'hidden';
+    this.pauseButton.innerHTML = 'pause';
+  }
+
+  /**
    * Restores gameplay UI, ambience, and timers after a pause
    */
   resumePausedGame() {
     this.soundManager.resumeAmbience();
-    this.gameUi.style.filter = 'unset';
-    this.pausedText.style.visibility = 'hidden';
-    this.pauseButton.innerHTML = 'pause';
+    this.hidePauseMenu();
     this.activeTimers.forEach((timer) => {
       timer.resume();
     });
@@ -2633,6 +2671,7 @@ class GameCoordinator {
 
     this.clearOtpChallenge(false);
     this.clearPopMessage();
+    this.clearDisplayText();
 
     this.activeTimers = [];
     this.points = 0;
@@ -2784,9 +2823,11 @@ class GameCoordinator {
   drawMaze(mazeArray, entityList) {
     this.pickups = [this.fruit, this.contactlessPickup, this.otpPickup];
 
+    this.gameBaseWidth = this.scaledTileSize * 28;
     this.mazeDiv.style.height = `${this.scaledTileSize * 31}px`;
-    this.mazeDiv.style.width = `${this.scaledTileSize * 28}px`;
-    this.gameUi.style.width = `${this.scaledTileSize * 28}px`;
+    this.mazeDiv.style.width = `${this.gameBaseWidth}px`;
+    this.gameUi.style.minWidth = `${this.gameBaseWidth}px`;
+    this.gameUi.style.width = `${this.gameBaseWidth}px`;
     this.bottomRow.style.minHeight = `${this.scaledTileSize * 2}px`;
     this.dotContainer = document.getElementById('dot-container');
 
@@ -4042,9 +4083,55 @@ class GameCoordinator {
 
     this.mazeDiv.appendChild(pointsDiv);
 
-    new Timer(() => {
-      this.mazeDiv.removeChild(pointsDiv);
+    if (!this.displayTextItems) {
+      this.displayTextItems = [];
+    }
+
+    const displayTextItem = {
+      attached: true,
+      element: pointsDiv,
+    };
+
+    displayTextItem.timer = new Timer(() => {
+      this.removeDisplayTextItem(displayTextItem);
     }, duration);
+
+    this.displayTextItems.push(displayTextItem);
+  }
+
+  /**
+   * Removes one temporary text display and its timer
+   * @param {({ element: Object, timer?: Object })} displayTextItem
+   */
+  removeDisplayTextItem(displayTextItem) {
+    if (!displayTextItem) {
+      return;
+    }
+
+    if (displayTextItem.timer) {
+      clearTimeout(displayTextItem.timer.timerId);
+      this.removeTimer({ detail: { timer: displayTextItem.timer } });
+    }
+
+    const displayTextItems = this.displayTextItems || [];
+    const isTracked = displayTextItems.includes(displayTextItem);
+
+    if (isTracked && displayTextItem.attached && displayTextItem.element) {
+      this.mazeDiv.removeChild(displayTextItem.element);
+    }
+
+    this.displayTextItems = displayTextItems.filter(
+      (item) => item !== displayTextItem,
+    );
+  }
+
+  /**
+   * Removes all temporary text displays
+   */
+  clearDisplayText() {
+    (this.displayTextItems || []).slice().forEach((displayTextItem) => {
+      this.removeDisplayTextItem(displayTextItem);
+    });
   }
 
   /**
@@ -4400,10 +4487,24 @@ class GameEngine {
     this.gameUi.style.transform = 'scale(1)';
     this.gameUi.style.left = '0px';
     this.gameUi.style.top = '0px';
-    const contentWidth = this.gameUi.offsetWidth;
-    const contentHeight = this.gameUi.offsetHeight;
+    this.gameUi.style.height = 'auto';
+    this.gameUi.style.minHeight = '0px';
+    if (this.gameBaseWidth) {
+      this.gameUi.style.minWidth = `${this.gameBaseWidth}px`;
+      this.gameUi.style.width = `${this.gameBaseWidth}px`;
+    }
 
-    if (!contentWidth || !contentHeight) {
+    const baseContentWidth = Math.max(
+      this.gameBaseWidth || 0,
+      this.gameUi.offsetWidth,
+      this.gameUi.scrollWidth,
+    );
+    const contentHeight = Math.max(
+      this.gameUi.offsetHeight,
+      this.gameUi.scrollHeight,
+    );
+
+    if (!baseContentWidth || !contentHeight) {
       return;
     }
 
@@ -4419,12 +4520,17 @@ class GameEngine {
     const innerHeight = Math.max(screenHeight - (fitPadding * 2), 0);
 
     const scale = Math.min(
-      innerWidth / contentWidth,
+      innerWidth / baseContentWidth,
       innerHeight / contentHeight,
     );
+    const fittedContentWidth = Math.max(
+      baseContentWidth,
+      Math.floor(innerWidth / scale),
+    );
 
+    this.gameUi.style.width = `${fittedContentWidth}px`;
     this.gameUi.style.transform = `scale(${scale})`;
-    this.gameUi.style.left = `${(screenWidth - (contentWidth * scale)) / 2}px`;
+    this.gameUi.style.left = `${(screenWidth - (fittedContentWidth * scale)) / 2}px`;
     this.gameUi.style.top = `${(screenHeight - (contentHeight * scale)) / 2}px`;
   };
 

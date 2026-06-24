@@ -116,6 +116,11 @@ body {
   color: #fff;
 }
 
+.pause-home {
+  background-color: #fff;
+  color: #231f20;
+}
+
 .game-ui {
   display: flex;
   flex-direction: column;
