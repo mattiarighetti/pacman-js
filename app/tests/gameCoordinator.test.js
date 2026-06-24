@@ -1636,10 +1636,19 @@ describe('gameCoordinator', () => {
       assert(comp.updateExtraLivesDisplay.called);
     });
 
-    it('turns ghost cash into payment cards for five seconds after positive points', () => {
+    it('keeps ghost cash unchanged when pacdots award points', () => {
       comp.points = 0;
 
-      comp.awardPoints({ detail: { points: 50 } });
+      comp.awardPoints({ detail: { points: 50, type: 'pacdot' } });
+      assert(!comp.ghosts[0].setPaymentCardVisualState.called);
+      assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
+    });
+
+    it('turns ghost cash into payment cards when rendered fruit points appear', () => {
+      comp.points = 0;
+      comp.displayText = sinon.fake();
+
+      comp.awardPoints({ detail: { points: 50, type: 'fruit' } });
       assert(comp.ghosts[0].setPaymentCardVisualState.calledOnce);
       assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
 
@@ -1656,9 +1665,10 @@ describe('gameCoordinator', () => {
         }
       };
 
-      comp.awardPoints({ detail: { points: 50 } });
+      comp.displayText = sinon.fake();
+      comp.awardPoints({ detail: { points: 50, type: 'fruit' } });
       clock.tick(4000);
-      comp.awardPoints({ detail: { points: 10 } });
+      comp.awardPoints({ detail: { points: 10, type: 'fruit' } });
       clock.tick(1000);
       assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
 
@@ -1679,9 +1689,10 @@ describe('gameCoordinator', () => {
 
     it('skips payment card hooks when a ghost does not expose them', () => {
       comp.points = 0;
+      comp.displayText = sinon.fake();
       comp.ghosts = [{}];
 
-      comp.awardPoints({ detail: { points: 50 } });
+      comp.awardPoints({ detail: { points: 50, type: 'fruit' } });
       clock.tick(5000);
 
       assert.strictEqual(comp.points, 50);
@@ -2600,6 +2611,7 @@ describe('gameCoordinator', () => {
         name: 'blinky',
         pause: sinon.fake(),
         clearCaughtVisualState: sinon.fake(),
+        setPaymentCardVisualState: sinon.fake(),
       };
       const e = {
         detail: {
@@ -2607,6 +2619,7 @@ describe('gameCoordinator', () => {
         },
       };
       comp.scaredGhosts = [ghost];
+      comp.ghosts = [ghost];
       comp.determineComboPoints = sinon.fake();
       global.window.dispatchEvent = sinon.fake();
       global.CustomEvent = class {};
@@ -2626,6 +2639,7 @@ describe('gameCoordinator', () => {
         ),
       );
       assert(comp.displayText.called);
+      assert(ghost.setPaymentCardVisualState.calledOnce);
       assert(comp.determineComboPoints.called);
 
       clock.tick(1000);

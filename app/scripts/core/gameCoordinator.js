@@ -1176,10 +1176,6 @@ class GameCoordinator {
     this.pointsDisplay.innerText = this.points;
     this.displayPointMilestoneMessages(previousPoints, this.points);
 
-    if (e.detail.points > 0) {
-      this.activatePaymentCardVisualState();
-    }
-
     if (this.points > (this.highScore || 0)) {
       this.highScore = this.points;
       this.highScoreDisplay.innerText = this.points;
@@ -1204,6 +1200,7 @@ class GameCoordinator {
       const height = this.scaledTileSize * 2;
 
       this.displayText({ left, top }, e.detail.points, 2000, width, height);
+      this.activatePaymentCardVisualState();
       this.soundManager.play('fruit');
       this.updateFruitDisplay(
         this.fruit.determineImage('fruit', e.detail.points),
@@ -2029,6 +2026,7 @@ class GameCoordinator {
       }),
     );
     this.displayText(position, comboPoints, pauseDuration, measurement);
+    this.activatePaymentCardVisualState();
 
     this.allowPacmanMovement = false;
     this.pacman.display = false;
