@@ -75,15 +75,52 @@ body {
 .paused-text {
   align-items: center;
   display: flex;
-  font-size: 50px;
+  flex-direction: column;
+  gap: 1.4rem;
   height: 100%;
   justify-content: center;
   left: 0;
   position: absolute;
+  text-align: center;
   user-select: none;
   visibility: hidden;
   width: 100%;
   z-index: 1;
+}
+
+.pause-title {
+  color: $white;
+  font-size: 50px;
+  line-height: 1.2;
+  text-shadow:
+    4px 0 $black,
+    0 4px $black,
+    -4px 0 $black,
+    0 -4px $black,
+    0 0 16px $blue;
+}
+
+.pause-action {
+  background-color: $logo-yellow;
+  border: 4px solid $logo-black;
+  box-shadow: 4px 4px $logo-red;
+  color: $logo-black;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1.25;
+  max-width: 90vw;
+  outline: none;
+  padding: 14px 16px;
+
+  &:active {
+    box-shadow: none;
+    transform: translateX(4px) translateY(4px);
+  }
+}
+
+.pause-resume {
+  background-color: $blue;
+  color: $white;
 }
 
 .game-ui {
@@ -219,6 +256,15 @@ body {
 }
 
 @media only screen and (max-width: 600px) {
+  .pause-title {
+    font-size: 32px;
+  }
+
+  .pause-action {
+    font-size: 12px;
+    padding: 12px;
+  }
+
   .game-start {
     scale: 0.5;
   }

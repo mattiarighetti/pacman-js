@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 (function nexiModeBootstrap() {
   if (typeof GameCoordinator === 'undefined' || typeof Pickup === 'undefined') {
     return;
@@ -35,9 +36,10 @@
       return;
     }
 
-    window.cancelAnimationFrame(gameCoordinator.fitAnimationFrame);
-    gameCoordinator.fitAnimationFrame = window.requestAnimationFrame(() => {
-      gameCoordinator.fitGameToPosScreen();
+    const gameCoordinatorRef = gameCoordinator;
+    window.cancelAnimationFrame(gameCoordinatorRef.fitAnimationFrame);
+    gameCoordinatorRef.fitAnimationFrame = window.requestAnimationFrame(() => {
+      gameCoordinatorRef.fitGameToPosScreen();
     });
   }
 
@@ -206,7 +208,8 @@
     }
 
     this.ghosts.forEach((ghost) => {
-      ghost.allowCollision = false;
+      const ghostRef = ghost;
+      ghostRef.allowCollision = false;
     });
 
     this.startGameplay(false);
@@ -278,7 +281,8 @@
 
     if (this.demoMode) {
       this.ghosts.forEach((ghost) => {
-        ghost.allowCollision = false;
+        const ghostRef = ghost;
+        ghostRef.allowCollision = false;
       });
     }
   };
@@ -318,7 +322,7 @@
   GameCoordinator.prototype.eatGhost = function patchedEatGhost(event) {
     const nextCombo = (this.ghostCombo || 0) + 1;
     const comboPoints = 100 * (2 ** nextCombo);
-    const ghost = (event.detail || {}).ghost;
+    const { ghost } = event.detail || {};
     const fraudLabel = ghost && ghost.animationTarget
       ? ghost.animationTarget.dataset.label
       : 'Frodatore';

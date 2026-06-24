@@ -11,6 +11,8 @@ class GameCoordinator {
     this.fruitDisplay = document.getElementById('fruit-display');
     this.mainMenu = document.getElementById('main-menu-container');
     this.gameStartButton = document.getElementById('game-start');
+    this.resumeGameButton = document.getElementById('resume-game');
+    this.restartGameButton = document.getElementById('restart-game');
     this.pauseButton = document.getElementById('pause-button');
     this.soundButton = document.getElementById('sound-button');
     this.leftCover = document.getElementById('left-cover');
@@ -109,6 +111,14 @@ class GameCoordinator {
       'click',
       this.startButtonClick.bind(this),
     );
+    this.resumeGameButton.addEventListener(
+      'click',
+      this.resumeGameClick.bind(this),
+    );
+    this.restartGameButton.addEventListener(
+      'click',
+      this.restartGameClick.bind(this),
+    );
     this.pauseButton.addEventListener('click', this.handlePauseKey.bind(this));
     this.soundButton.addEventListener(
       'click',
@@ -168,6 +178,54 @@ class GameCoordinator {
       this.init();
     }
     this.startGameplay(true);
+  }
+
+  /**
+   * Resumes the current game from the pause menu
+   */
+  resumeGameClick() {
+    if (!this.gameEngine || this.gameEngine.started) {
+      return;
+    }
+
+    this.gameEngine.start();
+    this.resumePausedGame();
+  }
+
+  /**
+   * Starts a fresh game from the pause menu
+   */
+  restartGameClick() {
+    if (!this.gameEngine) {
+      return;
+    }
+
+    if (typeof this.gameEngine.stop === 'function') {
+      this.gameEngine.stop();
+    }
+
+    this.soundManager.stopAmbience();
+    this.gameUi.style.filter = 'unset';
+    this.pausedText.style.visibility = 'hidden';
+    this.pauseButton.innerHTML = 'pause';
+
+    this.reset();
+    this.gameEngine.entityList = this.entityList;
+    this.gameEngine.start();
+    this.startGameplay(true);
+  }
+
+  /**
+   * Restores gameplay UI, ambience, and timers after a pause
+   */
+  resumePausedGame() {
+    this.soundManager.resumeAmbience();
+    this.gameUi.style.filter = 'unset';
+    this.pausedText.style.visibility = 'hidden';
+    this.pauseButton.innerHTML = 'pause';
+    this.activeTimers.forEach((timer) => {
+      timer.resume();
+    });
   }
 
   /**
@@ -865,13 +923,7 @@ class GameCoordinator {
       this.soundManager.play('pause');
 
       if (this.gameEngine.started) {
-        this.soundManager.resumeAmbience();
-        this.gameUi.style.filter = 'unset';
-        this.pausedText.style.visibility = 'hidden';
-        this.pauseButton.innerHTML = 'pause';
-        this.activeTimers.forEach((timer) => {
-          timer.resume();
-        });
+        this.resumePausedGame();
       } else {
         this.soundManager.stopAmbience();
         this.soundManager.setAmbience('pause_beat', true);

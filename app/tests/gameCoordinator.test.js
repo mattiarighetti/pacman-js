@@ -163,6 +163,42 @@ describe('gameCoordinator', () => {
     });
   });
 
+  describe('constructor', () => {
+    it('registers pause menu button click listeners', () => {
+      const defaultElement = () => ({
+        appendChild: () => {},
+        removeChild: () => {},
+        addEventListener: () => {},
+        remove: () => {},
+        style: {},
+        scrollWidth: 500,
+      });
+      const resumeGameButton = {
+        addEventListener: sinon.fake(),
+      };
+      const restartGameButton = {
+        addEventListener: sinon.fake(),
+      };
+      global.document.getElementById = (id) => {
+        if (id === 'resume-game') {
+          return resumeGameButton;
+        }
+
+        if (id === 'restart-game') {
+          return restartGameButton;
+        }
+
+        return defaultElement();
+      };
+
+      const newComp = new GameCoordinator();
+      assert(resumeGameButton.addEventListener.calledWith('click'));
+      assert(restartGameButton.addEventListener.calledWith('click'));
+      assert.strictEqual(typeof newComp.resumeGameButton.addEventListener, 'function');
+      assert.strictEqual(typeof newComp.restartGameButton.addEventListener, 'function');
+    });
+  });
+
   describe('startButtonClick', () => {
     it('calls init on firstGame', () => {
       comp.init = sinon.fake();
@@ -183,6 +219,107 @@ describe('gameCoordinator', () => {
       comp.startButtonClick();
       assert(comp.init.called);
       assert(!comp.firstGame);
+    });
+  });
+
+  describe('resumeGameClick', () => {
+    beforeEach(() => {
+      comp.activeTimers = [{ resume: sinon.fake() }];
+      comp.reset = sinon.fake();
+      comp.startGameplay = sinon.fake();
+      comp.soundManager.resumeAmbience = sinon.fake();
+      comp.gameUi.style.filter = 'blur(5px)';
+      comp.pausedText.style.visibility = 'visible';
+      comp.pauseButton.innerHTML = 'play_arrow';
+    });
+
+    it('does nothing before the game engine exists', () => {
+      comp.gameEngine = undefined;
+
+      comp.resumeGameClick();
+      assert(!comp.reset.called);
+      assert(!comp.startGameplay.called);
+      assert(!comp.soundManager.resumeAmbience.called);
+    });
+
+    it('does nothing if the game is already running', () => {
+      comp.gameEngine = {
+        start: sinon.fake(),
+        started: true,
+      };
+
+      comp.resumeGameClick();
+      assert(!comp.gameEngine.start.called);
+      assert(!comp.reset.called);
+      assert(!comp.startGameplay.called);
+    });
+
+    it('resumes the paused game without resetting it', () => {
+      comp.gameEngine = {
+        start: sinon.fake(),
+        started: false,
+      };
+
+      comp.resumeGameClick();
+      assert(comp.gameEngine.start.called);
+      assert(comp.soundManager.resumeAmbience.called);
+      assert.strictEqual(comp.gameUi.style.filter, 'unset');
+      assert.strictEqual(comp.pausedText.style.visibility, 'hidden');
+      assert.strictEqual(comp.pauseButton.innerHTML, 'pause');
+      assert(comp.activeTimers[0].resume.called);
+      assert(!comp.reset.called);
+      assert(!comp.startGameplay.called);
+    });
+  });
+
+  describe('restartGameClick', () => {
+    beforeEach(() => {
+      comp.soundManager.stopAmbience = sinon.fake();
+      comp.reset = sinon.fake(() => {
+        comp.entityList = ['reset-entity'];
+      });
+      comp.startGameplay = sinon.fake();
+      comp.gameUi.style.filter = 'blur(5px)';
+      comp.pausedText.style.visibility = 'visible';
+      comp.pauseButton.innerHTML = 'play_arrow';
+    });
+
+    it('does nothing before the game engine exists', () => {
+      comp.gameEngine = undefined;
+
+      comp.restartGameClick();
+      assert(!comp.reset.called);
+      assert(!comp.startGameplay.called);
+    });
+
+    it('restarts the game from the pause menu', () => {
+      comp.gameEngine = {
+        entityList: [],
+        start: sinon.fake(),
+        stop: sinon.fake(),
+      };
+
+      comp.restartGameClick();
+      assert(comp.gameEngine.stop.called);
+      assert(comp.soundManager.stopAmbience.called);
+      assert.strictEqual(comp.gameUi.style.filter, 'unset');
+      assert.strictEqual(comp.pausedText.style.visibility, 'hidden');
+      assert.strictEqual(comp.pauseButton.innerHTML, 'pause');
+      assert(comp.reset.called);
+      assert.deepEqual(comp.gameEngine.entityList, ['reset-entity']);
+      assert(comp.gameEngine.start.called);
+      assert(comp.startGameplay.calledWith(true));
+    });
+
+    it('restarts even if the engine has no stop method', () => {
+      comp.gameEngine = {
+        entityList: [],
+        start: sinon.fake(),
+      };
+
+      comp.restartGameClick();
+      assert(comp.gameEngine.start.called);
+      assert(comp.startGameplay.calledWith(true));
     });
   });
 
@@ -716,6 +853,7 @@ describe('gameCoordinator', () => {
 
     it('calls changePausedState', () => {
       comp.activeTimers = [];
+      comp.resumePausedGame = sinon.fake();
       comp.handlePauseKey();
       assert(comp.gameEngine.changePausedState.called);
       assert(comp.soundManager.play.calledWith('pause'));
