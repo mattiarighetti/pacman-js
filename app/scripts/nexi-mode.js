@@ -84,6 +84,16 @@
     );
   };
 
+  function determineBannerVariant(message) {
+    const variants = {
+      'Carta Nexi accettata': 'nexi-card',
+      'Anti-fraud shield online': 'nexi-security',
+      'Demo live sul POS': 'nexi-demo',
+    };
+
+    return variants[message] || 'nexi-info';
+  }
+
   GameCoordinator.prototype.setupNexiBranding = function setupNexiBranding() {
     const status = document.getElementById('nexi-status');
     this.nexiStatus = status;
@@ -94,19 +104,6 @@
         element.dataset.label = ghostLabels[ghostId];
       }
     });
-
-    const banner = document.createElement('div');
-    banner.id = 'demo-banner';
-    banner.className = 'demo-banner';
-    banner.textContent = 'Terminal ready';
-    document.getElementById('overflow-mask').appendChild(banner);
-    this.demoBanner = banner;
-
-    const scoreReasonBanner = document.createElement('div');
-    scoreReasonBanner.id = 'score-reason-banner';
-    scoreReasonBanner.className = 'score-reason-banner';
-    document.getElementById('overflow-mask').appendChild(scoreReasonBanner);
-    this.scoreReasonBanner = scoreReasonBanner;
   };
 
   GameCoordinator.prototype.setStatus = function setStatus(message) {
@@ -116,34 +113,20 @@
   };
 
   GameCoordinator.prototype.showBanner = function showBanner(message, duration) {
-    if (!this.demoBanner) {
+    if (typeof this.displayPopMessage !== 'function') {
       return;
     }
 
-    this.demoBanner.textContent = message;
-    this.demoBanner.classList.add('visible');
-
-    window.clearTimeout(this.demoBannerTimer);
-    this.demoBannerTimer = window.setTimeout(() => {
-      this.demoBanner.classList.remove('visible');
-    }, duration || 1800);
+    this.displayPopMessage(message, determineBannerVariant(message), duration);
   };
 
   GameCoordinator.prototype.showScoreReason = function showScoreReason(points, reason) {
-    if (!this.scoreReasonBanner) {
+    if (typeof this.displayPopMessage !== 'function') {
       return;
     }
 
-    this.scoreReasonBanner.innerHTML = `
-      <span class="points">+${points} IOSI</span>
-      <span class="reason">${reason}</span>
-    `;
-    this.scoreReasonBanner.classList.add('visible');
-
-    window.clearTimeout(this.scoreReasonTimer);
-    this.scoreReasonTimer = window.setTimeout(() => {
-      this.scoreReasonBanner.classList.remove('visible');
-    }, 1800);
+    this.displayPopMessage(`+${points} IOSI`, 'nexi-score', 1800);
+    this.setStatus(reason);
   };
 
   GameCoordinator.prototype.fitGameToPosScreen = function fitGameToPosScreen() {

@@ -330,65 +330,6 @@ body {
   display: none;
 }
 
-.demo-banner {
-  background: linear-gradient(90deg, rgba(27, 115, 255, 0.92), rgba(27, 235, 194, 0.92));
-  border-radius: 999px;
-  color: #021224;
-  left: 50%;
-  opacity: 0;
-  padding: 0.9rem 1.2rem;
-  position: absolute;
-  text-align: center;
-  top: 8rem;
-  transform: translateX(-50%);
-  transition: opacity 0.2s ease;
-  z-index: 6;
-}
-
-.demo-banner.visible {
-  opacity: 1;
-}
-
-.score-reason-banner {
-  left: 50%;
-  max-width: min(80vw, 23rem);
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  text-align: center;
-  top: 14%;
-  transform: translateX(-50%) scale(0.92);
-  transition: opacity 0.15s ease, transform 0.15s ease;
-  z-index: 8;
-}
-
-.score-reason-banner.visible {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
-}
-
-.score-reason-banner .points {
-  color: #ffffff;
-  display: block;
-  font-size: clamp(2rem, 5vw, 3.6rem);
-  line-height: 1;
-  text-shadow:
-    0 0 18px rgba(27, 235, 194, 0.5),
-    0 8px 20px rgba(0, 0, 0, 0.55);
-}
-
-.score-reason-banner .reason {
-  background: rgba(4, 18, 41, 0.88);
-  border: 1px solid rgba(27, 235, 194, 0.28);
-  border-radius: 999px;
-  color: #9ef6e5;
-  display: inline-block;
-  font-size: clamp(0.58rem, 1.2vw, 0.78rem);
-  margin-top: 0.7rem;
-  padding: 0.7rem 1rem;
-  text-transform: uppercase;
-}
-
 #dot-container > div,
 #fruit-display img,
 #extra-lives img {

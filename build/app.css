@@ -721,7 +721,7 @@ body {
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.45;
-  max-width: 90%;
+  max-width: 96%;
   overflow: hidden;
   padding: 0.45em 0.65em;
   pointer-events: none;
@@ -731,7 +731,7 @@ body {
   transform: translateX(-50%);
   user-select: none;
   width: max-content;
-  z-index: 4;
+  z-index: 6;
 }
 .pop-message::before {
   animation: pop-message-scan 1.1s linear infinite;
@@ -773,6 +773,20 @@ body {
 
 .pop-message-otp-approved {
   color: #7cffcf;
+}
+
+.pop-message-nexi-card {
+  color: #7cffcf;
+}
+
+.pop-message-nexi-security {
+  color: #8ef3ff;
+}
+
+.pop-message-nexi-demo,
+.pop-message-nexi-info,
+.pop-message-nexi-score {
+  color: #ffdf00;
 }
 
 .pop-message-otp-failed,

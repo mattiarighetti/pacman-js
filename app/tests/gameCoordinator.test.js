@@ -2115,13 +2115,44 @@ describe('gameCoordinator', () => {
       assert(letterSpan.classList.add.calledWith('pop-message-letter'));
       assert.strictEqual(letterSpan.style.animationDelay, '450ms');
       assert.strictEqual(popMessage.style.left, `${comp.scaledTileSize * 14}px`);
-      assert.strictEqual(popMessage.style.top, `${comp.scaledTileSize * 9}px`);
+      assert.strictEqual(popMessage.style.top, `${comp.scaledTileSize}px`);
       assert(comp.mazeDiv.appendChild.calledWith(popMessage));
 
       clock.tick(2200);
       assert(comp.mazeDiv.removeChild.calledWith(popMessage));
       assert.strictEqual(comp.popMessage, undefined);
       assert.strictEqual(comp.popMessageTimer, undefined);
+    });
+
+    it('uses a custom display duration when provided', () => {
+      const popMessage = {
+        appendChild: sinon.fake(),
+        classList: {
+          add: sinon.fake(),
+        },
+        style: {},
+      };
+      const letterSpan = {
+        classList: {
+          add: sinon.fake(),
+        },
+        style: {},
+      };
+      comp.mazeDiv = {
+        appendChild: sinon.fake(),
+        removeChild: sinon.fake(),
+      };
+      global.document.createElement = sinon.stub();
+      global.document.createElement.onFirstCall().returns(popMessage);
+      global.document.createElement.returns(letterSpan);
+
+      comp.displayPopMessage('Nexi', 'nexi-card', 1400);
+
+      clock.tick(1399);
+      assert.strictEqual(comp.mazeDiv.removeChild.called, false);
+
+      clock.tick(1);
+      assert(comp.mazeDiv.removeChild.calledWith(popMessage));
     });
 
     it('does not let an old timer remove a newer pop message', () => {

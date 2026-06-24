@@ -2957,8 +2957,9 @@ class GameCoordinator {
    * Displays a temporary arcade pop message over the maze
    * @param {String} message
    * @param {String} variant
+   * @param {Number} duration
    */
-  displayPopMessage(message, variant) {
+  displayPopMessage(message, variant, duration = 2200) {
     const popMessage = document.createElement('div');
 
     this.clearPopMessage();
@@ -2972,7 +2973,7 @@ class GameCoordinator {
       popMessage.appendChild(letterSpan);
     });
     popMessage.style.left = `${this.scaledTileSize * 14}px`;
-    popMessage.style.top = `${this.scaledTileSize * 9}px`;
+    popMessage.style.top = `${this.scaledTileSize}px`;
 
     this.mazeDiv.appendChild(popMessage);
     this.popMessage = popMessage;
@@ -2980,7 +2981,7 @@ class GameCoordinator {
       if (this.popMessage === popMessage) {
         this.clearPopMessage();
       }
-    }, 2200);
+    }, duration);
   }
 
   /**
