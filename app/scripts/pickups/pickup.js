@@ -7,14 +7,14 @@ class Pickup {
     this.nearPacman = false;
 
     this.fruitImages = {
-      100: 'cherry',
-      300: 'strawberry',
-      500: 'orange',
-      700: 'apple',
-      1000: 'melon',
-      2000: 'galaxian',
-      3000: 'bell',
-      5000: 'key',
+      100: 'card_contactless',
+      300: 'card_coral',
+      500: 'card_virtual',
+      700: 'card_business',
+      1000: 'token_secure',
+      2000: 'token_premium',
+      3000: 'token_black',
+      5000: 'token_vault',
     };
 
     this.setStyleMeasurements(type, scaledTileSize, column, row, points);
@@ -87,16 +87,18 @@ class Pickup {
     let image = '';
 
     if (type === 'fruit') {
-      image = this.fruitImages[points] || 'cherry';
+      image = this.fruitImages[points] || 'card_contactless';
+    } else if (type === 'powerPellet') {
+      image = this.powerPelletVariant || 'power_card_blue';
+    } else if (type === 'contactless') {
+      image = 'card_contactless';
+    } else if (type === 'otp') {
+      return 'url(app/style/graphics/spriteSheets/pickups/otp.svg)';
     } else {
-      image = type;
+      image = 'payment_dot';
     }
 
-    if (type === 'contactless') {
-      image = 'contactless';
-    }
-
-    return `url(app/style/graphics/spriteSheets/pickups/${image}.svg)`;
+    return `url(app/style/graphics/nexi/${image}.svg)`;
   }
 
   /**

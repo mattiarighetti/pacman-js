@@ -922,7 +922,7 @@ class Pacman {
    */
   setSpriteSheet(direction) {
     this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
-      + `spriteSheets/characters/pacman/pacman_${direction}.svg)`;
+      + `spriteSheets/characters/pacman/mini_pos_${direction}.svg)`;
   }
 
   prepDeathAnimation() {
@@ -934,7 +934,7 @@ class Pacman {
     const bgSize = this.measurement * this.spriteFrames;
     this.animationTarget.style.backgroundSize = `${bgSize}px`;
     this.animationTarget.style.backgroundImage = 'url(app/style/'
-      + 'graphics/spriteSheets/characters/pacman/pacman_death.svg)';
+      + 'graphics/spriteSheets/characters/pacman/mini_pos_declined.svg)';
     this.animationTarget.style.backgroundPosition = '0px 0px';
     this.pacmanArrow.style.backgroundImage = '';
   }
@@ -1391,6 +1391,11 @@ class GameCoordinator {
         `${imgBase}characters/pacman/arrow_left.svg`,
         `${imgBase}characters/pacman/arrow_right.svg`,
         `${imgBase}characters/pacman/arrow_up.svg`,
+        `${imgBase}characters/pacman/mini_pos_declined.svg`,
+        `${imgBase}characters/pacman/mini_pos_down.svg`,
+        `${imgBase}characters/pacman/mini_pos_left.svg`,
+        `${imgBase}characters/pacman/mini_pos_right.svg`,
+        `${imgBase}characters/pacman/mini_pos_up.svg`,
         `${imgBase}characters/pacman/pacman_death.svg`,
         `${imgBase}characters/pacman/pacman_error.svg`,
         `${imgBase}characters/pacman/pacman_down.svg`,
@@ -1443,6 +1448,19 @@ class GameCoordinator {
         `${imgBase}pickups/powerPellet.svg`,
         `${imgBase}pickups/contactless.svg`,
         `${imgBase}pickups/otp.svg`,
+        'app/style/graphics/nexi/payment_dot.svg',
+        'app/style/graphics/nexi/card_contactless.svg',
+        'app/style/graphics/nexi/card_coral.svg',
+        'app/style/graphics/nexi/card_virtual.svg',
+        'app/style/graphics/nexi/card_business.svg',
+        'app/style/graphics/nexi/power_card_blue.svg',
+        'app/style/graphics/nexi/power_card_gold.svg',
+        'app/style/graphics/nexi/power_card_gray.svg',
+        'app/style/graphics/nexi/power_card_black.svg',
+        'app/style/graphics/nexi/token_secure.svg',
+        'app/style/graphics/nexi/token_premium.svg',
+        'app/style/graphics/nexi/token_black.svg',
+        'app/style/graphics/nexi/token_vault.svg',
 
         // Fruit
         `${imgBase}pickups/apple.svg`,
@@ -3230,14 +3248,14 @@ class Pickup {
     this.nearPacman = false;
 
     this.fruitImages = {
-      100: 'cherry',
-      300: 'strawberry',
-      500: 'orange',
-      700: 'apple',
-      1000: 'melon',
-      2000: 'galaxian',
-      3000: 'bell',
-      5000: 'key',
+      100: 'card_contactless',
+      300: 'card_coral',
+      500: 'card_virtual',
+      700: 'card_business',
+      1000: 'token_secure',
+      2000: 'token_premium',
+      3000: 'token_black',
+      5000: 'token_vault',
     };
 
     this.setStyleMeasurements(type, scaledTileSize, column, row, points);
@@ -3310,16 +3328,18 @@ class Pickup {
     let image = '';
 
     if (type === 'fruit') {
-      image = this.fruitImages[points] || 'cherry';
+      image = this.fruitImages[points] || 'card_contactless';
+    } else if (type === 'powerPellet') {
+      image = this.powerPelletVariant || 'power_card_blue';
+    } else if (type === 'contactless') {
+      image = 'card_contactless';
+    } else if (type === 'otp') {
+      return 'url(app/style/graphics/spriteSheets/pickups/otp.svg)';
     } else {
-      image = type;
+      image = 'payment_dot';
     }
 
-    if (type === 'contactless') {
-      image = 'contactless';
-    }
-
-    return `url(app/style/graphics/spriteSheets/pickups/${image}.svg)`;
+    return `url(app/style/graphics/nexi/${image}.svg)`;
   }
 
   /**
@@ -3801,6 +3821,190 @@ class CharacterUtil {
     }
 
     return updatedProperties;
+  }
+}
+
+
+/**
+ * Local-only leaderboard for the Nexi Pac-Man hackathon edition.
+ * Persists a top-5 ranking to localStorage. No network calls.
+ */
+class Leaderboard {
+  static get STORAGE_KEY() {
+    return 'nexi:leaderboard';
+  }
+
+  static get LEGACY_HIGH_SCORE_KEY() {
+    return 'highScore';
+  }
+
+  static get HIGH_SCORE_KEY() {
+    return 'nexi:highScore';
+  }
+
+  static get MAX_ENTRIES() {
+    return 5;
+  }
+
+  /**
+   * Loads the stored ranking. Falls back to an empty list and migrates the
+   * legacy highScore key when present so existing players keep their record.
+   * @returns {Array<{initials:string, score:number, shield:string, settlements:number}>}
+   */
+  static load() {
+    let entries = [];
+    try {
+      const raw = localStorage.getItem(Leaderboard.STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          entries = parsed;
+        }
+      }
+    } catch (e) {
+      entries = [];
+    }
+
+    if (entries.length === 0) {
+      const legacy = localStorage.getItem(Leaderboard.LEGACY_HIGH_SCORE_KEY);
+      if (legacy && !Number.isNaN(Number(legacy))) {
+        entries = [{
+          initials: 'YOU',
+          score: Number(legacy),
+          shield: 'contactless',
+          settlements: 0,
+        }];
+      }
+    }
+
+    return entries;
+  }
+
+  /**
+   * Persists the ranking back to localStorage.
+   * @param {Array} entries
+   */
+  static save(entries) {
+    localStorage.setItem(Leaderboard.STORAGE_KEY, JSON.stringify(entries));
+    if (entries.length > 0) {
+      const top = entries.reduce((best, current) => (
+        current.score > best.score ? current : best
+      ), entries[0]);
+      localStorage.setItem(Leaderboard.HIGH_SCORE_KEY, String(top.score));
+    }
+  }
+
+  /**
+   * Returns true when the given score would enter the local top 5.
+   * @param {number} score
+   * @returns {boolean}
+   */
+  static qualifies(score) {
+    const entries = Leaderboard.load();
+    if (entries.length < Leaderboard.MAX_ENTRIES) {
+      return score > 0;
+    }
+    const lowest = entries.reduce((min, current) => (
+      current.score < min ? current.score : min
+    ), entries[0].score);
+    return score > lowest;
+  }
+
+  /**
+   * Inserts a new entry, sorts, and truncates to the maximum size.
+   * @param {{initials:string, score:number, shield:string, settlements:number}} entry
+   * @returns {Array}
+   */
+  static insert(entry) {
+    const entries = Leaderboard.load();
+    entries.push({
+      initials: entry.initials || 'YOU',
+      score: Number(entry.score) || 0,
+      shield: entry.shield || 'contactless',
+      settlements: Number(entry.settlements) || 0,
+    });
+    entries.sort((a, b) => b.score - a.score);
+    const trimmed = entries.slice(0, Leaderboard.MAX_ENTRIES);
+    Leaderboard.save(trimmed);
+    return trimmed;
+  }
+
+  /**
+   * Reads the highest stored score, or 0 when the storage is empty.
+   * @returns {number}
+   */
+  static bestScore() {
+    const entries = Leaderboard.load();
+    if (entries.length === 0) {
+      return 0;
+    }
+    return entries[0].score;
+  }
+}
+
+
+/**
+ * Utility helpers used by GameCoordinator to brand UI labels and pop-up
+ * texts without leaking markup across the codebase.
+ */
+class NexiTheme {
+  static get TEXTS() {
+    return {
+      ready: 'AUTHORIZE',
+      gameOver: 'DECLINED',
+      insertCoin: '1 CREDIT',
+      paused: 'SESSION PAUSED',
+      oneUp: '1UP',
+      highScore: 'ioSi POINTS',
+      shieldLabels: {
+        contactless: 'CONTACTLESS',
+        antifraud: 'ANTI-FRAUD',
+        pos: 'POS',
+        wallet: 'WALLET',
+        qr: 'QR-PAY',
+        token: 'TOKEN',
+      },
+    };
+  }
+
+  /**
+   * Returns a friendly shield label used in the HUD and leaderboard.
+   * @param {string} shield
+   * @returns {string}
+   */
+  static shieldLabel(shield) {
+    return NexiTheme.TEXTS.shieldLabels[shield] || 'CONTACTLESS';
+  }
+
+  /**
+   * Maps a fruit point value to the Nexi shield chip name. Falls back to the
+   * raw point value when the point table does not match.
+   * @param {number} points
+   * @returns {string}
+   */
+  static shieldForPoints(points) {
+    if (points >= 5000) {
+      return 'token';
+    }
+    if (points >= 2000) {
+      return 'qr';
+    }
+    if (points >= 700) {
+      return 'wallet';
+    }
+    if (points >= 300) {
+      return 'pos';
+    }
+    return 'contactless';
+  }
+
+  /**
+   * Returns a CSS class for a given shield chip.
+   * @param {string} shield
+   * @returns {string}
+   */
+  static shieldChipClass(shield) {
+    return `fruit-chip ${shield}`;
   }
 }
 

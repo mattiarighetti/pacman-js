@@ -535,7 +535,7 @@ body {
 .loading-pacman {
   animation: loading-animation 0.3s steps(4) infinite;
   background-color: #000;
-  background-image: url("../app/style/graphics/spriteSheets/characters/pacman/pacman_right.svg");
+  background-image: url("../app/style/graphics/spriteSheets/characters/pacman/mini_pos_right.svg");
   background-size: 192px;
   border-radius: 10px;
   height: 48px;
@@ -925,6 +925,324 @@ body {
       opacity: 0;
     }
   }
+}
+.overflow-mask.nexi-skin {
+  background: radial-gradient(circle at 50% 30%, #0a1f44 0%, #02061a 70%);
+  color: #fff;
+}
+
+.nexi-logo-tag {
+  background: #fff;
+  border-radius: 4px;
+  display: inline-block;
+  font-family: "Press Start 2P", sans-serif;
+  letter-spacing: 2px;
+  padding: 8px 14px;
+}
+
+.nexi-logo-tag > span {
+  color: #0a1f44;
+  font-size: 20px;
+}
+
+.nexi-tagline {
+  color: #e8f1ff;
+  letter-spacing: 3px;
+  margin-top: 8px;
+}
+
+.nexi-insert-coin {
+  animation: blink 1.2s infinite;
+  color: #3fe0c5;
+  letter-spacing: 3px;
+  margin-top: 8px;
+}
+
+.main-menu-container.nexi-skin .game-start {
+  background-color: #ffd400;
+  border: 4px solid #fff;
+  box-shadow: 5px 5px #e53935;
+  color: #0a1f44;
+  font-size: 36px;
+  letter-spacing: 4px;
+  padding: 18px 28px;
+}
+
+.nexi-secret-hint {
+  color: #e8f1ff;
+  font-size: 10px;
+  letter-spacing: 3px;
+  margin-top: 14px;
+}
+
+.paused-text.nexi-skin {
+  background: rgba(2, 6, 26, 0.6);
+  color: #3fe0c5;
+  font-size: 36px;
+  letter-spacing: 6px;
+  text-shadow: 0 0 14px #3fe0c5;
+}
+
+.row.top .label {
+  color: #e8f1ff;
+  letter-spacing: 4px;
+}
+.row.top .label._accent {
+  color: #3fe0c5;
+}
+.row.top .score {
+  color: #ffd400;
+  font-size: 28px;
+}
+.row.top .score._accent {
+  color: #3fe0c5;
+}
+
+.extra-lives.nexi-skin .nexi-life {
+  background: #ffd400;
+  border-radius: 50%;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 60%, 75% 60%, 75% 100%, 25% 100%, 25% 60%, 0% 60%);
+  display: inline-block;
+  height: 18px;
+  margin-right: 6px;
+  width: 18px;
+}
+
+.fruit-display .fruit-chip {
+  border-radius: 4px;
+  color: #02061a;
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-left: 4px;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.fruit-display .fruit-chip.pos {
+  background: #3fe0c5;
+}
+
+.fruit-display .fruit-chip.crd {
+  background: #0052cc;
+  color: #fff;
+}
+
+.fruit-display .fruit-chip.wlt {
+  background: #ff6fb3;
+}
+
+.fruit-display .fruit-chip.qr {
+  background: #ff8f00;
+}
+
+.fruit-display .fruit-chip.tkn {
+  background: #ffd400;
+}
+
+.nexi-pop {
+  background: rgba(2, 6, 26, 0.85);
+  border: 2px solid #3fe0c5;
+  border-radius: 6px;
+  color: #3fe0c5;
+  font-family: "Press Start 2P", sans-serif;
+  letter-spacing: 4px;
+  padding: 8px 14px;
+  position: absolute;
+  text-shadow: 0 0 8px rgba(63, 224, 197, 0.6);
+  z-index: 6;
+}
+
+.nexi-pop.warning {
+  border-color: #e53935;
+  color: #e53935;
+  text-shadow: 0 0 8px rgba(229, 57, 53, 0.5);
+}
+
+.nexi-pop.gold {
+  border-color: #ffd400;
+  color: #ffd400;
+  text-shadow: 0 0 8px rgba(255, 212, 0, 0.6);
+}
+
+.pacman.contactless-aura::before,
+.pacman-arrow.contactless-aura::before {
+  border: 2px dashed #3fe0c5;
+  border-radius: 50%;
+  content: "";
+  display: block;
+  height: 180%;
+  left: -40%;
+  opacity: 0.7;
+  position: absolute;
+  top: -40%;
+  width: 180%;
+}
+
+.pacman.contactless-aura::after {
+  border: 1px dashed #3fe0c5;
+  border-radius: 50%;
+  content: "";
+  display: block;
+  height: 260%;
+  left: -80%;
+  opacity: 0.4;
+  position: absolute;
+  top: -80%;
+  width: 260%;
+}
+
+.ghost.antifraud {
+  filter: hue-rotate(150deg) saturate(1.2);
+}
+
+.ghost.antifraud::before {
+  background: #e53935;
+  border-radius: 4px;
+  color: #fff;
+  content: "!";
+  font-family: "Press Start 2P", sans-serif;
+  font-size: 14px;
+  padding: 2px 6px;
+  position: absolute;
+  right: -8px;
+  top: -8px;
+}
+
+.game-over-overlay.nexi-skin {
+  background: rgba(2, 6, 26, 0.92);
+  color: #fff;
+  height: 100vh;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100vw;
+  z-index: 6;
+}
+
+.game-over-overlay.nexi-skin .decline-title {
+  color: #e53935;
+  font-size: 42px;
+  letter-spacing: 6px;
+}
+
+.game-over-overlay.nexi-skin .score-card {
+  background: #0a1f44;
+  border: 2px solid #0052cc;
+  border-radius: 10px;
+  padding: 18px 24px;
+}
+
+.game-over-overlay.nexi-skin .score-card .score-value {
+  color: #ffd400;
+  font-size: 32px;
+}
+
+.achievement-chip {
+  border-radius: 6px;
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin: 4px;
+  padding: 8px 12px;
+}
+
+.achievement-chip.mint {
+  background: #3fe0c5;
+  color: #02061a;
+}
+
+.achievement-chip.gold {
+  background: #ffd400;
+  color: #02061a;
+}
+
+.achievement-chip.pink {
+  background: #ff6fb3;
+  color: #02061a;
+}
+
+.nexi-button {
+  background: #ffd400;
+  border: 3px solid #fff;
+  border-radius: 8px;
+  box-shadow: 4px 4px #e53935;
+  color: #0a1f44;
+  cursor: pointer;
+  font-family: "Press Start 2P", sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  margin: 8px;
+  padding: 12px 24px;
+}
+
+.nexi-button.ghost {
+  background: transparent;
+  border-color: #3fe0c5;
+  box-shadow: 4px 4px rgba(63, 224, 197, 0.3);
+  color: #3fe0c5;
+}
+
+.leaderboard-overlay.nexi-skin {
+  background: rgba(2, 6, 26, 0.95);
+  color: #fff;
+  height: 100vh;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100vw;
+  z-index: 6;
+}
+
+.leaderboard-overlay.nexi-skin table {
+  border-collapse: collapse;
+  margin: 0 auto;
+  width: 80%;
+}
+
+.leaderboard-overlay.nexi-skin th,
+.leaderboard-overlay.nexi-skin td {
+  border-bottom: 1px solid #234a8f;
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.leaderboard-overlay.nexi-skin tr.self {
+  border: 2px solid #ffd400;
+  color: #ffd400;
+}
+
+.leaderboard-overlay.nexi-skin .shield-chip {
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 4px 8px;
+}
+
+.shield-chip.contactless {
+  background: #3fe0c5;
+  color: #02061a;
+}
+
+.shield-chip.pos {
+  background: #0052cc;
+  color: #fff;
+}
+
+.shield-chip.wallet {
+  background: #ff6fb3;
+  color: #02061a;
+}
+
+.shield-chip.qr {
+  background: #ff8f00;
+  color: #02061a;
+}
+
+.shield-chip.token {
+  background: #ffd400;
+  color: #02061a;
 }
 .pacman {
   margin: 0;

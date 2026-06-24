@@ -62,8 +62,7 @@ describe('pickup', () => {
       assert.strictEqual(pickup.x, 11);
       assert.strictEqual(pickup.y, 11);
       assert.deepEqual(pickup.animationTarget.style, {
-        backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/'
-          + 'pacdot.svg)',
+        backgroundImage: 'url(app/style/graphics/nexi/payment_dot.svg)',
         backgroundSize: '2px',
         height: '2px',
         left: '11px',
@@ -81,8 +80,7 @@ describe('pickup', () => {
       assert.strictEqual(pickup.x, 8);
       assert.strictEqual(pickup.y, 8);
       assert.deepEqual(pickup.animationTarget.style, {
-        backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/'
-         + 'powerPellet.svg)',
+        backgroundImage: 'url(app/style/graphics/nexi/power_card_blue.svg)',
         backgroundSize: '8px',
         height: '8px',
         left: '8px',
@@ -101,8 +99,7 @@ describe('pickup', () => {
       assert.strictEqual(pickup.x, 4);
       assert.strictEqual(pickup.y, 4);
       assert.deepEqual(pickup.animationTarget.style, {
-        backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/'
-         + 'cherry.svg)',
+        backgroundImage: 'url(app/style/graphics/nexi/card_contactless.svg)',
         backgroundSize: '16px',
         height: '16px',
         left: '4px',
@@ -121,8 +118,7 @@ describe('pickup', () => {
       assert.strictEqual(pickup.x, 4);
       assert.strictEqual(pickup.y, 4);
       assert.deepEqual(pickup.animationTarget.style, {
-        backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/'
-         + 'contactless.svg)',
+        backgroundImage: 'url(app/style/graphics/nexi/card_contactless.svg)',
         backgroundSize: '16px',
         height: '16px',
         left: '4px',
@@ -158,68 +154,71 @@ describe('pickup', () => {
     let baseUrl;
 
     beforeEach(() => {
-      baseUrl = 'url(app/style/graphics/spriteSheets/pickups/';
+      baseUrl = 'url(app/style/graphics/nexi/';
     });
 
     it('returns correct images for fruits', () => {
       assert.strictEqual(
         pickup.determineImage('fruit', 100),
-        `${baseUrl}cherry.svg)`,
+        `${baseUrl}card_contactless.svg)`,
       );
 
       assert.strictEqual(
         pickup.determineImage('fruit', 300),
-        `${baseUrl}strawberry.svg)`,
+        `${baseUrl}card_coral.svg)`,
       );
 
       assert.strictEqual(
         pickup.determineImage('fruit', 500),
-        `${baseUrl}orange.svg)`,
+        `${baseUrl}card_virtual.svg)`,
       );
 
       assert.strictEqual(
         pickup.determineImage('fruit', 700),
-        `${baseUrl}apple.svg)`,
+        `${baseUrl}card_business.svg)`,
       );
 
       assert.strictEqual(
         pickup.determineImage('fruit', 1000),
-        `${baseUrl}melon.svg)`,
+        `${baseUrl}token_secure.svg)`,
       );
 
       assert.strictEqual(
         pickup.determineImage('fruit', 2000),
-        `${baseUrl}galaxian.svg)`,
+        `${baseUrl}token_premium.svg)`,
       );
 
       assert.strictEqual(
         pickup.determineImage('fruit', 3000),
-        `${baseUrl}bell.svg)`,
+        `${baseUrl}token_black.svg)`,
       );
 
       assert.strictEqual(
         pickup.determineImage('fruit', 5000),
-        `${baseUrl}key.svg)`,
+        `${baseUrl}token_vault.svg)`,
       );
     });
 
-    it('returns cherry by default for unrecognized fruit', () => {
+    it('returns a contactless card by default for unrecognized fruit', () => {
       const unknown = pickup.determineImage('fruit', undefined);
-      assert.strictEqual(unknown, `${baseUrl}cherry.svg)`);
+      assert.strictEqual(unknown, `${baseUrl}card_contactless.svg)`);
     });
 
-    it('returns correct images for other pickups', () => {
+    it('returns payment images for other pickups', () => {
       const pacdot = pickup.determineImage('pacdot', undefined);
-      assert.strictEqual(pacdot, `${baseUrl}pacdot.svg)`);
+      assert.strictEqual(pacdot, `${baseUrl}payment_dot.svg)`);
 
       const powerPellet = pickup.determineImage('powerPellet', undefined);
-      assert.strictEqual(powerPellet, `${baseUrl}powerPellet.svg)`);
+      assert.strictEqual(powerPellet, `${baseUrl}power_card_blue.svg)`);
 
       const contactless = pickup.determineImage('contactless', undefined);
-      assert.strictEqual(contactless, `${baseUrl}contactless.svg)`);
+      assert.strictEqual(contactless, `${baseUrl}card_contactless.svg)`);
 
       const otp = pickup.determineImage('otp', undefined);
-      assert.strictEqual(otp, `${baseUrl}otp.svg)`);
+      assert.strictEqual(
+        otp,
+        'url(app/style/graphics/spriteSheets/pickups/otp.svg)',
+      );
     });
   });
 
@@ -261,7 +260,7 @@ describe('pickup', () => {
       });
       assert.strictEqual(
         pickup.animationTarget.style.backgroundImage,
-        'url(app/style/graphics/spriteSheets/pickups/contactless.svg)',
+        'url(app/style/graphics/nexi/card_contactless.svg)',
       );
       assert.strictEqual(pickup.animationTarget.style.visibility, 'visible');
     });

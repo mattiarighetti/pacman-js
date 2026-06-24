@@ -149,26 +149,26 @@ describe('pacman', () => {
   describe('setSpriteSheet', () => {
     const baseUrl = 'url(app/style/graphics/spriteSheets/characters/pacman/';
 
-    it('sets the correct spritesheet for any given direction', () => {
+    it('sets the mini POS spritesheet for any given direction', () => {
       pacman.setSpriteSheet('up');
       assert.strictEqual(
         pacman.animationTarget.style.backgroundImage,
-        `${baseUrl}pacman_up.svg)`,
+        `${baseUrl}mini_pos_up.svg)`,
       );
       pacman.setSpriteSheet('down');
       assert.strictEqual(
         pacman.animationTarget.style.backgroundImage,
-        `${baseUrl}pacman_down.svg)`,
+        `${baseUrl}mini_pos_down.svg)`,
       );
       pacman.setSpriteSheet('left');
       assert.strictEqual(
         pacman.animationTarget.style.backgroundImage,
-        `${baseUrl}pacman_left.svg)`,
+        `${baseUrl}mini_pos_left.svg)`,
       );
       pacman.setSpriteSheet('right');
       assert.strictEqual(
         pacman.animationTarget.style.backgroundImage,
-        `${baseUrl}pacman_right.svg)`,
+        `${baseUrl}mini_pos_right.svg)`,
       );
     });
   });
@@ -189,7 +189,7 @@ describe('pacman', () => {
       assert.strictEqual(
         pacman.animationTarget.style.backgroundImage,
         'url(app/style/graphics/spriteSheets/characters/pacman/'
-        + 'pacman_death.svg)',
+        + 'mini_pos_declined.svg)',
       );
       assert.strictEqual(
         pacman.animationTarget.style.backgroundPosition,
