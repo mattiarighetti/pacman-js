@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexi Pacman Leaderboard</title>
+    <style>
+      :root {
+        --nexi-blue: #2d32aa;
+        --nexi-dark: #0a1248;
+        --nexi-accent: #36d2c0;
+        --text-light: #f3f6ff;
+        --surface: rgba(8, 14, 54, 0.78);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        align-items: center;
+        background:
+          radial-gradient(circle at 12% 18%, rgba(113, 130, 255, 0.45), transparent 35%),
+          radial-gradient(circle at 83% 82%, rgba(54, 210, 192, 0.35), transparent 36%),
+          linear-gradient(150deg, #0b1140 0%, var(--nexi-blue) 46%, #060a22 100%);
+        color: var(--text-light);
+        display: flex;
+        font-family: 'Press Start 2P', sans-serif;
+        justify-content: center;
+        margin: 0;
+        min-height: 100vh;
+        padding: 1.25rem;
+      }
+
+      .board {
+        backdrop-filter: blur(12px);
+        background: var(--surface);
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 26px;
+        box-shadow: 0 22px 80px rgba(7, 12, 42, 0.55);
+        max-width: 980px;
+        padding: 1.35rem;
+        width: min(95vw, 980px);
+      }
+
+      .board-header {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 1.2rem;
+      }
+
+      .brand-logo {
+        height: 28px;
+      }
+
+      .board-title {
+        font-size: clamp(1rem, 2.4vw, 1.9rem);
+        margin: 0;
+      }
+
+      .board-subtitle {
+        color: rgba(227, 232, 255, 0.92);
+        font-size: 0.65rem;
+        line-height: 1.5;
+        margin: 0.6rem 0 0;
+      }
+
+      .board-actions {
+        display: flex;
+        gap: 0.7rem;
+      }
+
+      .btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        border-radius: 12px;
+        color: var(--text-light);
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.6rem;
+        padding: 0.65rem 0.85rem;
+        text-decoration: none;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-primary {
+        background: linear-gradient(120deg, #ffd054 0%, #ffdf8f 100%);
+        border-color: #16205f;
+        color: #0a154f;
+      }
+
+      .table-wrap {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th,
+      td {
+        font-size: 0.62rem;
+        padding: 0.95rem 0.75rem;
+        text-align: left;
+      }
+
+      th {
+        background: rgba(54, 210, 192, 0.15);
+        color: #c8fffa;
+      }
+
+      tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .rank-badge {
+        align-items: center;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        display: inline-flex;
+        height: 24px;
+        justify-content: center;
+        width: 24px;
+      }
+
+      .score-cell {
+        color: #ffe380;
+      }
+
+      .empty {
+        color: rgba(227, 232, 255, 0.9);
+        font-size: 0.66rem;
+        line-height: 1.7;
+        padding: 1.25rem;
+        text-align: center;
+      }
+
+      @media (max-width: 760px) {
+        .board {
+          padding: 1rem;
+        }
+
+        .board-actions {
+          width: 100%;
+        }
+
+        .btn {
+          flex: 1;
+          text-align: center;
+        }
+
+        th,
+        td {
+          font-size: 0.54rem;
+          padding: 0.7rem 0.5rem;
+        }
+      }
+    </style>
+    <link href="https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <main class="board">
+      <div class="board-header">
+        <div>
+          <img
+            class="brand-logo"
+            src="https://www.nexi.it/content/dam/nexinew/icone/nexi-logo-white.svg"
+            alt="Nexi"
+          />
+          <h1 class="board-title">Pacman Leaderboard</h1>
+          <p class="board-subtitle">Classifica live dei migliori score accumulati durante l'hackathon.</p>
+        </div>
+        <div class="board-actions">
+          <a class="btn" href="https://www.nexi.it/it" target="_blank" rel="noopener noreferrer">Nexi.it</a>
+          <a class="btn btn-primary" href="index.html">Torna al gioco</a>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Giocatore</th>
+              <th>Punti</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body"></tbody>
+        </table>
+      </div>
+      <div id="leaderboard-empty" class="empty" hidden>
+        Nessun punteggio registrato. Avvia una partita, totalizza punti e torna qui per vedere la classifica.
+      </div>
+    </main>
+
+    <script>
+      const bodyEl = document.getElementById('leaderboard-body');
+      const emptyEl = document.getElementById('leaderboard-empty');
+
+      const rawData = localStorage.getItem('pacmanNexiLeaderboard') || '[]';
+      let leaderboard;
+
+      try {
+        leaderboard = JSON.parse(rawData);
+        if (!Array.isArray(leaderboard)) {
+          leaderboard = [];
+        }
+      } catch (err) {
+        leaderboard = [];
+      }
+
+      if (leaderboard.length === 0) {
+        const highScore = Number(localStorage.getItem('highScore') || 0);
+        if (highScore > 0) {
+          leaderboard = [
+            {
+              name: localStorage.getItem('pacmanNexiCurrentPlayer') || 'Player Nexi',
+              score: highScore,
+              date: new Date().toISOString(),
+            },
+          ];
+        }
+      }
+
+      leaderboard
+        .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
+        .slice(0, 20)
+        .forEach((entry, index) => {
+          const tr = document.createElement('tr');
+          const date = entry.date
+            ? new Date(entry.date).toLocaleDateString('it-IT', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            })
+            : '-';
+
+          tr.innerHTML = `
+            <td><span class="rank-badge">${index + 1}</span></td>
+            <td>${String(entry.name || 'Player Nexi').slice(0, 20)}</td>
+            <td class="score-cell">${Number(entry.score || 0)}</td>
+            <td>${date}</td>
+          `;
+          bodyEl.appendChild(tr);
+        });
+
+      if (bodyEl.children.length === 0) {
+        emptyEl.hidden = false;
+      }
+    </script>
+  </body>
+</html>

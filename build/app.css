@@ -13,7 +13,7 @@ body {
 }
 
 .overflow-mask {
-  background-color: #000;
+  background: radial-gradient(circle at 15% 20%, rgba(106, 123, 255, 0.55), transparent 42%), radial-gradient(circle at 80% 85%, rgba(52, 211, 194, 0.36), transparent 40%), linear-gradient(150deg, #111a57 0%, #2d32aa 45%, #090d2c 100%);
   color: #fff;
   display: flex;
   height: 100vh;
@@ -165,7 +165,7 @@ body {
 }
 
 .loading-cover {
-  background: #ffdf00;
+  background: #2d32aa;
   height: 100vh;
   position: absolute;
   top: 0;
@@ -197,6 +197,71 @@ body {
   z-index: 5;
 }
 
+.intro-glow {
+  border-radius: 999px;
+  filter: blur(8px);
+  height: 260px;
+  opacity: 0.75;
+  position: absolute;
+  width: 260px;
+  z-index: -1;
+}
+
+.intro-glow-left {
+  background: rgba(85, 130, 255, 0.6);
+  left: 8%;
+  top: 22%;
+}
+
+.intro-glow-right {
+  background: rgba(46, 194, 177, 0.52);
+  right: 10%;
+  top: 46%;
+}
+
+.intro-panel {
+  align-items: center;
+  backdrop-filter: blur(12px);
+  background: linear-gradient(140deg, rgba(7, 14, 50, 0.8) 0%, rgba(13, 22, 78, 0.72) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(8, 12, 38, 0.55);
+  display: flex;
+  flex-direction: column;
+  margin-top: 11vh;
+  max-width: 820px;
+  padding: 2.2rem 2rem 2.4rem;
+  width: min(92vw, 820px);
+}
+
+.intro-eyebrow {
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  color: rgb(211, 219, 255);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  margin: 0;
+  padding: 0.6rem 1rem;
+  text-transform: uppercase;
+}
+
+.intro-title {
+  color: #f8fbff;
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  line-height: 1.2;
+  margin: 1rem 0 0;
+  text-align: center;
+}
+
+.intro-subtitle {
+  color: rgb(211, 218, 255);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin: 0.9rem 0 1.3rem;
+  max-width: 650px;
+  text-align: center;
+}
+
 .brent-ward-logo {
   position: absolute;
   top: 2rem;
@@ -207,28 +272,211 @@ body {
 }
 
 .logo {
-  width: 800px;
-  max-width: 80vw;
-  margin-top: 25vh;
+  margin-top: 0;
+  max-width: min(76vw, 620px);
+  width: 620px;
+}
+
+.menu-actions {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.3rem;
+  width: min(430px, 86vw);
+}
+
+.player-name-label {
+  color: rgb(225, 232, 255);
+  font-size: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+
+.player-name-input {
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid rgb(38, 57, 165);
+  border-radius: 12px;
+  box-sizing: border-box;
+  color: #0f1b67;
+  font-size: 0.8rem;
+  outline: none;
+  padding: 0.9rem 0.95rem;
+  width: 100%;
+}
+.player-name-input::placeholder {
+  color: rgb(86, 100, 173);
+}
+.player-name-input:focus {
+  border-color: rgb(52, 198, 176);
+  box-shadow: 0 0 0 4px rgba(52, 198, 176, 0.22);
 }
 
 .game-start {
-  background-color: #fcc73f;
-  border: 5px solid #231f20;
-  border-radius: 10px;
-  box-shadow: 5px 5px #ee2a29;
-  color: #231f20;
-  cursor: pointer;
-  font-size: 48px;
-  outline: none;
-  padding: 16px;
-}
-.game-start:active {
+  background: none;
+  border: none;
   box-shadow: none;
-  transform: translateX(5px) translateY(5px);
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  width: auto;
+}
+.game-start:hover .atm-body {
+  filter: brightness(1.18);
+  transform: scale(1.04);
+}
+.game-start:active .atm-body {
+  transform: scale(0.97);
 }
 .game-start:disabled {
   cursor: default;
+  opacity: 0.6;
+}
+.game-start:disabled .atm-card {
+  animation-play-state: paused;
+}
+
+.atm-body {
+  background: #1c2d8e;
+  border: 4px solid #07103a;
+  box-shadow: 6px 6px 0 #07103a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  image-rendering: pixelated;
+  padding: 10px 12px 12px;
+  transition: transform 0.12s, filter 0.12s;
+  width: 200px;
+}
+
+.atm-top-bar {
+  align-items: center;
+  background: #07103a;
+  border: 2px solid #0a1762;
+  display: flex;
+  justify-content: center;
+  padding: 5px 8px;
+}
+.atm-top-bar .atm-logo {
+  height: 14px;
+}
+
+.atm-screen {
+  background: #031203;
+  border: 3px solid #07103a;
+  box-shadow: inset 0 0 6px rgba(0, 51, 0, 0.4392156863);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 6px;
+}
+.atm-screen .atm-screen-line {
+  color: #44ff44;
+  font-size: 0.48rem;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 0 6px rgba(68, 255, 68, 0.6);
+}
+
+.atm-blink {
+  animation: atm-blink 0.9s step-start infinite;
+  color: #88ffaa !important;
+}
+
+@keyframes atm-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.atm-slot-area {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+}
+
+.atm-slot-label {
+  color: #ffd054;
+  font-size: 0.52rem;
+  flex-shrink: 0;
+}
+
+.atm-slot {
+  background: #040c2a;
+  border: 3px solid #ffd054;
+  flex: 1;
+  height: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+.atm-card {
+  animation: atm-card-slide 2.4s steps(18) infinite;
+  background: linear-gradient(to bottom, #ffd054 0%, #ffd054 30%, #b38600 30%, #b38600 70%, #ffd054 70%, #ffd054 100%);
+  border-right: 3px solid #a07000;
+  height: 8px;
+  position: absolute;
+  top: 3px;
+  transform: translateX(200px);
+  width: 90px;
+}
+
+@keyframes atm-card-slide {
+  0% {
+    transform: translateX(200px);
+  }
+  10% {
+    transform: translateX(200px);
+  }
+  45% {
+    transform: translateX(-40px);
+  }
+  65% {
+    transform: translateX(-40px);
+  }
+  95% {
+    transform: translateX(200px);
+  }
+  100% {
+    transform: translateX(200px);
+  }
+}
+.atm-pad {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(3, 1fr);
+}
+.atm-pad .atm-key-dot {
+  background: #07103a;
+  border: 2px solid #0f1f6a;
+  display: block;
+  height: 11px;
+}
+
+.leaderboard-link {
+  background: #07103a;
+  border: 4px solid #ffd054;
+  box-shadow: 0 6px 0 #a07000;
+  color: #ffd054;
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  outline: none;
+  padding: 0.78rem 1rem;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.1s, box-shadow 0.1s;
+  width: 100%;
+}
+.leaderboard-link:hover {
+  background: #0f1f6a;
+  color: #ffe788;
+}
+.leaderboard-link:active {
+  box-shadow: 0 2px 0 #a07000;
+  transform: translateY(4px);
 }
 
 @media only screen and (max-width: 600px) {
@@ -239,8 +487,32 @@ body {
     font-size: 12px;
     padding: 12px;
   }
-  .game-start {
-    scale: 0.5;
+  .main-menu-container {
+    justify-content: center;
+  }
+  .intro-panel {
+    margin-top: 0;
+    padding: 1.4rem 1rem 1.6rem;
+  }
+  .brent-ward-logo {
+    left: 1rem;
+    top: 1rem;
+  }
+  .brent-ward-logo img {
+    height: 1.4rem;
+  }
+  .intro-title {
+    font-size: 1.45rem;
+  }
+  .intro-subtitle {
+    font-size: 0.6rem;
+  }
+  .logo {
+    max-width: 86vw;
+  }
+  .header-buttons {
+    padding: 1rem;
+    width: calc(100vw - 2rem);
   }
 }
 .loading-container {

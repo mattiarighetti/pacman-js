@@ -83,23 +83,23 @@ body {
 }
 
 .game-start {
-  background: linear-gradient(135deg, #1b73ff, #1bebc2);
+  background: none;
   border: 0;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.15),
-    0 18px 40px rgba(0, 0, 0, 0.35);
-  color: #031127;
-  font-size: clamp(1rem, 3vw, 2.2rem);
-  margin-top: 2rem;
-  padding: 1rem 1.6rem;
-  text-transform: uppercase;
+  box-shadow: none;
+  color: inherit;
+  font-size: inherit;
+  margin-top: 0.75rem;
+  padding: 0;
+  text-transform: none;
 }
 
 .game-start:active {
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.15),
-    0 8px 20px rgba(0, 0, 0, 0.4);
-  transform: translateY(4px);
+  box-shadow: none;
+  transform: none;
+}
+
+.game-start:active .atm-body {
+  transform: scale(0.97);
 }
 
 .menu-footnote {
@@ -463,7 +463,7 @@ body {
   }
 
   .game-start {
-    margin-top: 1.25rem;
+    margin-top: 0.75rem;
     transform: none;
   }
 }

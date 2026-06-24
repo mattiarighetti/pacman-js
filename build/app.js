@@ -1095,6 +1095,7 @@ class GameCoordinator {
     this.gameStartButton = document.getElementById('game-start');
     this.resumeGameButton = document.getElementById('resume-game');
     this.restartGameButton = document.getElementById('restart-game');
+    this.playerNameInput = document.getElementById('player-name-input');
     this.pauseButton = document.getElementById('pause-button');
     this.soundButton = document.getElementById('sound-button');
     this.leftCover = document.getElementById('left-cover');
@@ -1179,6 +1180,12 @@ class GameCoordinator {
       { points: 5000, message: 'Authorization approved', variant: 'approved' },
       { points: 10000, message: 'ioSi level up', variant: 'level-up' },
     ];
+    this.currentPlayerName = this.sanitizePlayerName(
+      localStorage.getItem('pacmanNexiCurrentPlayer') || 'Player Nexi',
+    );
+    if (this.playerNameInput) {
+      this.playerNameInput.value = this.currentPlayerName;
+    }
 
     this.otpBonusPoints = 500;
     this.otpPenaltyPoints = 250;
@@ -1208,6 +1215,27 @@ class GameCoordinator {
     );
 
     this.preloadAssets();
+    // Payment success overlay
+    this.paymentOverlay = document.createElement('div');
+    this.paymentOverlay.className = 'payment-overlay';
+    this.paymentOverlay.innerHTML = '<div class="payment-content">'
+      + '<div class="payment-icon">✓</div>'
+      + '<div class="payment-text">Pagamento effettuato</div>'
+      + '</div>';
+    this.paymentOverlay.style.display = 'none';
+    this.mazeDiv.appendChild(this.paymentOverlay);
+  }
+
+  showPaymentSuccess() {
+    this.paymentOverlay.style.display = 'flex';
+    // hide after 2 seconds
+    setTimeout(() => {
+      this.hidePaymentSuccess();
+    }, 2000);
+  }
+
+  hidePaymentSuccess() {
+    this.paymentOverlay.style.display = 'none';
   }
 
   /**
@@ -1245,6 +1273,11 @@ class GameCoordinator {
    * Reveals the game underneath the loading covers and starts gameplay
    */
   startButtonClick() {
+    this.currentPlayerName = this.sanitizePlayerName(
+      this.playerNameInput && this.playerNameInput.value,
+    );
+    localStorage.setItem('pacmanNexiCurrentPlayer', this.currentPlayerName);
+
     this.leftCover.style.left = '-50%';
     this.rightCover.style.right = '-50%';
     this.mainMenu.style.opacity = 0;
@@ -2127,6 +2160,7 @@ class GameCoordinator {
    * Displays GAME OVER text and displays the menu so players can play again
    */
   gameOver() {
+    this.saveLeaderboardEntry();
     localStorage.setItem('highScore', this.highScore);
 
     new Timer(() => {
@@ -2153,6 +2187,48 @@ class GameCoordinator {
         }, 1000);
       }, 2500);
     }, 2250);
+  }
+
+  sanitizePlayerName(rawName) {
+    const normalized = String(rawName || '').trim().replace(/\s+/g, ' ');
+    if (!normalized) {
+      return 'Player Nexi';
+    }
+
+    return normalized.slice(0, 20);
+  }
+
+  saveLeaderboardEntry() {
+    const score = Number(this.points || 0);
+    if (score <= 0) {
+      return;
+    }
+
+    const playerName = this.sanitizePlayerName(this.currentPlayerName);
+    const nextEntry = {
+      name: playerName,
+      score,
+      date: new Date().toISOString(),
+    };
+
+    let leaderboard = [];
+    try {
+      leaderboard = JSON.parse(
+        localStorage.getItem('pacmanNexiLeaderboard') || '[]',
+      );
+      if (!Array.isArray(leaderboard)) {
+        leaderboard = [];
+      }
+    } catch (err) {
+      leaderboard = [];
+    }
+
+    leaderboard.push(nextEntry);
+    leaderboard.sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
+    localStorage.setItem(
+      'pacmanNexiLeaderboard',
+      JSON.stringify(leaderboard.slice(0, 20)),
+    );
   }
 
   /**
@@ -2345,6 +2421,7 @@ class GameCoordinator {
     this.scaredGhosts.forEach((ghost) => {
       ghost.becomeScared();
     });
+    this.showPaymentSuccess();
 
     const powerDuration = Math.max((7 - this.level) * 1000, 0);
     this.ghostFlashTimer = new Timer(() => {
