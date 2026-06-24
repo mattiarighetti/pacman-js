@@ -1,0 +1,445 @@
+body {
+  background:
+    radial-gradient(circle at top, rgba(27, 235, 194, 0.16), transparent 32%),
+    linear-gradient(180deg, #07142e 0%, #040b1c 100%);
+}
+
+.overflow-mask {
+  background:
+    radial-gradient(circle at top, rgba(27, 235, 194, 0.12), transparent 28%),
+    linear-gradient(180deg, #08142f 0%, #040815 100%);
+  box-sizing: border-box;
+  padding: 1rem 0;
+}
+
+.brent-ward-logo,
+.header-buttons a {
+  display: none !important;
+}
+
+.header-buttons {
+  left: 50%;
+  padding: 1rem 1.25rem 0;
+  transform: translateX(-50%);
+  width: min(92vw, 42rem);
+}
+
+.header-buttons::before {
+  content: 'NEXI PAY-MAN';
+  color: #e8f1ff;
+  font-size: 0.9rem;
+  letter-spacing: 0.18em;
+  text-shadow: 0 0 12px rgba(27, 235, 194, 0.45);
+}
+
+.main-menu-container {
+  background: rgba(4, 9, 24, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.main-menu-container.demo-visible {
+  background: linear-gradient(180deg, rgba(4, 9, 24, 0.58), rgba(4, 9, 24, 0.78));
+}
+
+.logo {
+  display: none;
+}
+
+.nexi-hero {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 16vh;
+  max-width: 54rem;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+.nexi-kicker,
+.menu-footnote,
+.nexi-chipline span,
+.nexi-status {
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.nexi-kicker {
+  color: #1bebc2;
+}
+
+.nexi-title {
+  color: #f4fbff;
+  font-size: clamp(3rem, 10vw, 7rem);
+  line-height: 0.95;
+  margin: 0;
+  text-shadow: 0 0 24px rgba(27, 235, 194, 0.22);
+}
+
+.nexi-subtitle {
+  color: #c8dbff;
+  font-size: clamp(0.8rem, 1.8vw, 1rem);
+  line-height: 1.8;
+  margin: 0;
+  max-width: 48rem;
+}
+
+.nexi-chipline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.nexi-chipline span,
+.menu-footnote,
+.nexi-status {
+  background: rgba(11, 28, 61, 0.82);
+  border: 1px solid rgba(27, 235, 194, 0.3);
+  border-radius: 999px;
+  color: #d7e8ff;
+  padding: 0.8rem 1rem;
+}
+
+.game-start {
+  background: linear-gradient(135deg, #1b73ff, #1bebc2);
+  border: 0;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.15),
+    0 18px 40px rgba(0, 0, 0, 0.35);
+  color: #031127;
+  font-size: clamp(1rem, 3vw, 2.2rem);
+  margin-top: 2rem;
+  padding: 1rem 1.6rem;
+  text-transform: uppercase;
+}
+
+.game-start:active {
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.15),
+    0 8px 20px rgba(0, 0, 0, 0.4);
+  transform: translateY(4px);
+}
+
+.menu-footnote {
+  margin-top: 1rem;
+}
+
+.pos-shell {
+  background: linear-gradient(180deg, #ffffff 0%, #f1f1f5 35%, #ececf1 100%);
+  border: 1px solid rgba(7, 24, 56, 0.08);
+  border-radius: 2.4rem;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -4px 12px rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  max-height: calc(100vh - 2rem);
+  min-height: calc(100vh - 2rem);
+  padding: 1rem 1rem 0.9rem;
+  position: relative;
+  width: min(58vw, 28rem);
+}
+
+.smartpos-top {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 0.7rem;
+  min-height: 7.2rem;
+  padding-top: 0.55rem;
+}
+
+.smartpos-logo-image {
+  display: block;
+  height: auto;
+  image-rendering: pixelated;
+  max-width: min(60%, 10rem);
+  width: 100%;
+}
+
+.smartpos-printer {
+  background: linear-gradient(180deg, rgba(235, 235, 240, 0.95), rgba(221, 221, 228, 0.98));
+  border-bottom: 1px solid rgba(9, 18, 37, 0.16);
+  border-top: 1px solid rgba(255, 255, 255, 0.9);
+  margin: 0 -1rem 0.8rem;
+  padding: 0.7rem 1rem 0.8rem;
+}
+
+.smartpos-printer-slot {
+  background: linear-gradient(180deg, #181818, #060606);
+  border-radius: 0.4rem;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.04),
+    0 1px 0 rgba(255, 255, 255, 0.55);
+  height: 1rem;
+  margin: 0 auto;
+  width: 82%;
+}
+
+.pos-screen-frame {
+  background: #1e1f22;
+  border-radius: 0.55rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(7, 24, 56, 0.05);
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.8rem;
+}
+
+.pos-screen {
+  background:
+    linear-gradient(180deg, rgba(8, 18, 42, 0.98), rgba(4, 10, 24, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.pos-screen-inner {
+  background:
+    linear-gradient(180deg, rgba(8, 18, 42, 0.98), rgba(4, 10, 24, 0.98));
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.game-ui {
+  background:
+    linear-gradient(180deg, rgba(12, 24, 53, 0.96), rgba(5, 12, 27, 0.96));
+  border: 1px solid rgba(141, 179, 255, 0.18);
+  border-radius: 0.3rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 0 40px rgba(27, 235, 194, 0.05);
+  padding: 1rem 1rem 0.5rem;
+  position: absolute;
+  transform-origin: top left;
+}
+
+.smartpos-side {
+  background: linear-gradient(180deg, #f1f1f5, #d9d9df);
+  border-left: 1px solid rgba(9, 18, 37, 0.18);
+  border-radius: 0 0.7rem 0.7rem 0;
+  height: 50%;
+  position: absolute;
+  right: -0.95rem;
+  top: 33%;
+  width: 0.95rem;
+}
+
+.smartpos-bottom {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.7rem;
+  padding: 0 1.4rem;
+}
+
+.smartpos-bottom .foot {
+  background: linear-gradient(180deg, #d6d6dc, #f9f9fb);
+  border-bottom: 2px solid #111;
+  border-radius: 0 0 0.35rem 0.35rem;
+  display: block;
+  height: 0.95rem;
+  width: 1.15rem;
+}
+
+.nexi-status {
+  color: #9ef6e5;
+  margin: 0 auto 1rem;
+  text-align: center;
+  width: fit-content;
+}
+
+.maze {
+  border-radius: 0.22rem;
+  box-shadow:
+    0 0 0 8px rgba(7, 19, 44, 0.88),
+    0 0 0 9px rgba(27, 235, 194, 0.14),
+    inset 0 0 40px rgba(27, 115, 255, 0.18);
+  overflow: hidden;
+}
+
+.maze::after {
+  bottom: 0.5rem;
+  color: rgba(232, 241, 255, 0.65);
+  content: 'NEXI IOSI TERMINAL';
+  font-size: 0.58rem;
+  left: 50%;
+  letter-spacing: 0.14em;
+  position: absolute;
+  text-shadow: 0 0 10px rgba(27, 235, 194, 0.2);
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.paused-text {
+  color: #ffffff;
+  text-shadow: 0 0 24px rgba(27, 235, 194, 0.35);
+}
+
+.ghost::after {
+  background: rgba(3, 17, 39, 0.88);
+  border: 1px solid rgba(255, 84, 112, 0.35);
+  border-radius: 999px;
+  color: #ffd8df;
+  content: attr(data-label);
+  font-size: 0.35em;
+  left: 50%;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.35rem;
+  position: absolute;
+  text-transform: uppercase;
+  top: -0.9rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.main-menu-container:not(.demo-visible) .ghost::after {
+  display: none;
+}
+
+.demo-banner {
+  background: linear-gradient(90deg, rgba(27, 115, 255, 0.92), rgba(27, 235, 194, 0.92));
+  border-radius: 999px;
+  color: #021224;
+  left: 50%;
+  opacity: 0;
+  padding: 0.9rem 1.2rem;
+  position: absolute;
+  text-align: center;
+  top: 8rem;
+  transform: translateX(-50%);
+  transition: opacity 0.2s ease;
+  z-index: 6;
+}
+
+.demo-banner.visible {
+  opacity: 1;
+}
+
+.score-reason-banner {
+  left: 50%;
+  max-width: min(80vw, 23rem);
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  top: 14%;
+  transform: translateX(-50%) scale(0.92);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 8;
+}
+
+.score-reason-banner.visible {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+.score-reason-banner .points {
+  color: #ffffff;
+  display: block;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  line-height: 1;
+  text-shadow:
+    0 0 18px rgba(27, 235, 194, 0.5),
+    0 8px 20px rgba(0, 0, 0, 0.55);
+}
+
+.score-reason-banner .reason {
+  background: rgba(4, 18, 41, 0.88);
+  border: 1px solid rgba(27, 235, 194, 0.28);
+  border-radius: 999px;
+  color: #9ef6e5;
+  display: inline-block;
+  font-size: clamp(0.58rem, 1.2vw, 0.78rem);
+  margin-top: 0.7rem;
+  padding: 0.7rem 1rem;
+  text-transform: uppercase;
+}
+
+#dot-container > div,
+#fruit-display img,
+#extra-lives img {
+  image-rendering: pixelated;
+}
+
+.loading-cover {
+  background:
+    linear-gradient(135deg, #0f2c68 0%, #1b73ff 45%, #1bebc2 100%);
+}
+
+@media only screen and (max-width: 900px) {
+  .nexi-hero {
+    margin-top: 13vh;
+  }
+
+  .game-ui {
+    padding: 0.75rem 0.75rem 0.4rem;
+  }
+
+  .nexi-status {
+    margin-bottom: 0.75rem;
+  }
+
+  .pos-shell {
+    border-radius: 2rem;
+    max-height: calc(100vh - 1.5rem);
+    min-height: calc(100vh - 1.5rem);
+    padding: 0.75rem 0.75rem 0.85rem;
+    width: min(78vw, 24rem);
+  }
+
+  .smartpos-top {
+    min-height: 5.8rem;
+  }
+
+  .smartpos-printer {
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .header-buttons {
+    padding: 1rem 1rem 0;
+  }
+
+  .header-buttons::before {
+    font-size: 0.72rem;
+  }
+
+  .pos-shell {
+    max-height: calc(100vh - 1rem);
+    min-height: calc(100vh - 1rem);
+    width: 88vw;
+  }
+
+  .smartpos-top {
+    min-height: 5rem;
+  }
+
+  .smartpos-contactless {
+    display: none;
+  }
+
+  .nexi-chipline span,
+  .menu-footnote,
+  .nexi-status {
+    font-size: 0.58rem;
+  }
+
+  .game-start {
+    margin-top: 1.25rem;
+    transform: none;
+  }
+}
