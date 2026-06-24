@@ -239,8 +239,8 @@
     <main class="board">
       <div class="board-header">
         <div>
-          <h1 class="board-title">Pacman Leaderboard</h1>
-          <p class="board-subtitle">Classifica live dei migliori score accumulati durante l'hackathon.</p>
+          <h1 class="board-title">Pay-Man Leaderboard</h1>
+          <p class="board-subtitle">Classifica live dei migliori score accumulati</p>
         </div>
         <div class="board-actions">
           <a class="btn" href="https://www.nexi.it/it" target="_blank" rel="noopener noreferrer">Nexi.it</a>
@@ -266,60 +266,117 @@
       </div>
     </main>
 
+    <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore-compat.js"></script>
+    <script src="app/scripts/utilities/firebaseLeaderboard.js"></script>
     <script>
       const bodyEl = document.getElementById('leaderboard-body');
       const emptyEl = document.getElementById('leaderboard-empty');
+      const emptyMessage = emptyEl.textContent.trim();
 
-      const rawData = localStorage.getItem('pacmanNexiLeaderboard') || '[]';
-      let leaderboard;
+      function normalizeLeaderboardEntry(entry) {
+        return {
+          name: String(entry.name || 'Player Nexi').trim().slice(0, 20) || 'Player Nexi',
+          score: Number(entry.score || 0),
+          date: entry.date || '',
+        };
+      }
 
-      try {
-        leaderboard = JSON.parse(rawData);
-        if (!Array.isArray(leaderboard)) {
+      function loadLocalLeaderboard() {
+        const rawData = localStorage.getItem('pacmanNexiLeaderboard') || '[]';
+        let leaderboard;
+
+        try {
+          leaderboard = JSON.parse(rawData);
+          if (!Array.isArray(leaderboard)) {
+            leaderboard = [];
+          }
+        } catch (err) {
           leaderboard = [];
         }
-      } catch (err) {
-        leaderboard = [];
-      }
 
-      if (leaderboard.length === 0) {
-        const highScore = Number(localStorage.getItem('highScore') || 0);
-        if (highScore > 0) {
-          leaderboard = [
-            {
-              name: localStorage.getItem('pacmanNexiCurrentPlayer') || 'Player Nexi',
-              score: highScore,
-              date: new Date().toISOString(),
-            },
-          ];
+        if (leaderboard.length === 0) {
+          const highScore = Number(localStorage.getItem('highScore') || 0);
+          if (highScore > 0) {
+            leaderboard = [
+              {
+                name: localStorage.getItem('pacmanNexiCurrentPlayer') || 'Player Nexi',
+                score: highScore,
+                date: new Date().toISOString(),
+              },
+            ];
+          }
         }
+
+        return leaderboard
+          .map(normalizeLeaderboardEntry)
+          .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
+          .slice(0, 20);
       }
 
-      leaderboard
-        .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
-        .slice(0, 20)
-        .forEach((entry, index) => {
-          const tr = document.createElement('tr');
-          const date = entry.date
-            ? new Date(entry.date).toLocaleDateString('it-IT', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            })
-            : '-';
+      function appendCell(row, text, className) {
+        const cell = document.createElement('td');
+        if (className) {
+          cell.className = className;
+        }
+        cell.textContent = text;
+        row.appendChild(cell);
+      }
 
-          tr.innerHTML = `
-            <td><span class="rank-badge">${index + 1}</span></td>
-            <td>${String(entry.name || 'Player Nexi').slice(0, 20)}</td>
-            <td class="score-cell">${Number(entry.score || 0)}</td>
-            <td>${date}</td>
-          `;
+      function appendRankCell(row, rank) {
+        const cell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = 'rank-badge';
+        badge.textContent = rank;
+        cell.appendChild(badge);
+        row.appendChild(cell);
+      }
+
+      function formatDate(rawDate) {
+        if (!rawDate) {
+          return '-';
+        }
+
+        return new Date(rawDate).toLocaleDateString('it-IT', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+      }
+
+      function renderLeaderboard(leaderboard, message = emptyMessage) {
+        bodyEl.textContent = '';
+        emptyEl.textContent = message;
+        emptyEl.hidden = leaderboard.length > 0;
+
+        leaderboard.forEach((entry, index) => {
+          const tr = document.createElement('tr');
+          appendRankCell(tr, String(index + 1));
+          appendCell(tr, entry.name);
+          appendCell(tr, String(entry.score), 'score-cell');
+          appendCell(tr, formatDate(entry.date));
           bodyEl.appendChild(tr);
         });
-
-      if (bodyEl.children.length === 0) {
-        emptyEl.hidden = false;
       }
+
+      function loadRemoteLeaderboard() {
+        if (!window.FirebaseLeaderboard || !window.FirebaseLeaderboard.isAvailable()) {
+          return Promise.reject(new Error('Firebase leaderboard is unavailable'));
+        }
+
+        return window.FirebaseLeaderboard.loadTop(20);
+      }
+
+      renderLeaderboard([], 'Caricamento classifica...');
+
+      loadRemoteLeaderboard()
+        .then((remoteLeaderboard) => {
+          renderLeaderboard(remoteLeaderboard.map(normalizeLeaderboardEntry));
+        })
+        .catch(() => {
+          const localLeaderboard = loadLocalLeaderboard();
+          renderLeaderboard(localLeaderboard);
+        });
     </script>
   </body>
 </html>

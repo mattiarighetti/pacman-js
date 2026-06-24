@@ -90,8 +90,12 @@
       image = this.powerPelletVariant || 'power_card_blue';
     } else if (type === 'contactless') {
       image = 'card_contactless';
+    } else if (type === 'otp') {
+      return 'url(app/style/graphics/spriteSheets/pickups/otp.svg)';
+    } else if (type === 'pacdot') {
+      return 'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)';
     } else {
-      image = 'payment_dot';
+      return 'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)';
     }
 
     return `url(app/style/graphics/nexi/${image}.svg)`;
