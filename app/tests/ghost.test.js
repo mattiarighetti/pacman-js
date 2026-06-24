@@ -188,45 +188,45 @@ describe('ghost', () => {
     });
 
     it('sets the correct spritesheet for any given direction', () => {
-      const url = 'url(app/style/graphics/spriteSheets/characters/ghosts/';
+      const url = 'url(app/style/graphics/spriteSheets/characters/ghosts/cash/';
 
       comp.setSpriteSheet('blinky', 'up');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        `${url}blinky/blinky_up.svg)`,
+        `${url}cash_up.svg)`,
       );
       comp.setSpriteSheet('blinky', 'down');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        `${url}blinky/blinky_down.svg)`,
+        `${url}cash_down.svg)`,
       );
       comp.setSpriteSheet('blinky', 'left');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        `${url}blinky/blinky_left.svg)`,
+        `${url}cash_left.svg)`,
       );
       comp.setSpriteSheet('blinky', 'right');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        `${url}blinky/blinky_right.svg)`,
+        `${url}cash_right.svg)`,
       );
     });
 
     it('adds emotion if the ghost is moving quickly', () => {
-      const url = 'url(app/style/graphics/spriteSheets/characters/ghosts/';
+      const url = 'url(app/style/graphics/spriteSheets/characters/ghosts/cash/';
 
       comp.defaultSpeed = comp.mediumSpeed;
       comp.setSpriteSheet('blinky', 'up', 'chase');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        `${url}blinky/blinky_up_annoyed.svg)`,
+        `${url}cash_up.svg)`,
       );
 
       comp.defaultSpeed = comp.fastSpeed;
       comp.setSpriteSheet('blinky', 'up', 'chase');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        `${url}blinky/blinky_up_angry.svg)`,
+        `${url}cash_up.svg)`,
       );
     });
   });
@@ -245,8 +245,8 @@ describe('ghost', () => {
       assert.strictEqual(comp.direction, comp.defaultDirection);
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        'url(app/style/graphics/spriteSheets/characters/ghosts/blinky'
-        + '/blinky_left.svg)',
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_left.svg)',
       );
       assert.strictEqual(comp.backgroundOffsetPixels, 0);
       assert.strictEqual(

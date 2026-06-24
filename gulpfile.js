@@ -13,7 +13,13 @@ function styles() {
 
 function scripts() {
   return gulp
-    .src(['app/scripts/**/*.js', '!app/scripts/nexi-mode.js'])
+    .src([
+      'app/scripts/utilities/**/*.js',
+      'app/scripts/characters/**/*.js',
+      'app/scripts/pickups/**/*.js',
+      'app/scripts/core/**/*.js',
+      'app/scripts/nexi-mode.js',
+    ])
     .pipe(removeCode({ production: true }))
     .pipe(concat('app.js'))
     .pipe(gulp.dest('build'));

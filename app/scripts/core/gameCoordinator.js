@@ -321,6 +321,12 @@ class GameCoordinator {
         `${imgBase}characters/pacman/pacman_right.svg`,
         `${imgBase}characters/pacman/pacman_up.svg`,
 
+        // Cash enemies
+        `${imgBase}characters/ghosts/cash/cash_down.svg`,
+        `${imgBase}characters/ghosts/cash/cash_left.svg`,
+        `${imgBase}characters/ghosts/cash/cash_right.svg`,
+        `${imgBase}characters/ghosts/cash/cash_up.svg`,
+
         // Blinky
         `${imgBase}characters/ghosts/blinky/blinky_down_angry.svg`,
         `${imgBase}characters/ghosts/blinky/blinky_down_annoyed.svg`,

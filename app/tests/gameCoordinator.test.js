@@ -93,6 +93,13 @@ describe('gameCoordinator', () => {
       }),
     };
 
+    global.window = {
+      innerHeight: 1000,
+      innerWidth: 1000,
+      addEventListener: () => {},
+      dispatchEvent: () => {},
+    };
+
     global.localStorage = {
       getItem: () => {},
       setItem: () => {},
@@ -160,6 +167,14 @@ describe('gameCoordinator', () => {
       const result = comp.determineScale(1);
       assert.strictEqual(result, 3);
       assert.strictEqual(comp.determineScale.callCount, 4);
+    });
+
+    it('falls back to zero when viewport dimensions are unavailable', () => {
+      global.window.innerHeight = undefined;
+      global.window.innerWidth = undefined;
+
+      const result = comp.determineScale(1);
+      assert.strictEqual(result, 0);
     });
   });
 
@@ -387,6 +402,31 @@ describe('gameCoordinator', () => {
         assert(comp.createElements.calledTwice);
         clock.tick(1500);
         assert(spy.called);
+      });
+    });
+
+    it('preloads the cash sprites used by the chasing enemies', () => {
+      global.document.getElementById = sinon.fake.returns({
+        style: {},
+        scrollWidth: 500,
+        remove: sinon.fake(),
+      });
+      comp.createElements = sinon.fake.resolves();
+
+      comp.preloadAssets().then(() => {
+        const imgSources = comp.createElements.firstCall.args[0];
+        assert(imgSources.includes(
+          'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_left.svg',
+        ));
+        assert(imgSources.includes(
+          'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_down.svg',
+        ));
+        assert(imgSources.includes(
+          'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_up.svg',
+        ));
+        assert(imgSources.includes(
+          'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_right.svg',
+        ));
       });
     });
   });

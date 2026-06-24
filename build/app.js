@@ -1,3 +1,706 @@
+class CharacterUtil {
+  constructor(scaledTileSize) {
+    this.scaledTileSize = scaledTileSize;
+    this.threshold = 5 * this.scaledTileSize;
+    this.directions = {
+      up: 'up',
+      down: 'down',
+      left: 'left',
+      right: 'right',
+    };
+  }
+
+  /**
+   * Check if a given character has moved more than five in-game tiles during a frame.
+   * If so, we want to temporarily hide the object to avoid 'animation stutter'.
+   * @param {({top: number, left: number})} position - Position during the current frame
+   * @param {({top: number, left: number})} oldPosition - Position during the previous frame
+   * @returns {('hidden'|'visible')} - The new 'visibility' css property value for the character.
+   */
+  checkForStutter(position, oldPosition) {
+    let stutter = false;
+
+    if (position && oldPosition) {
+      if (Math.abs(position.top - oldPosition.top) > this.threshold
+        || Math.abs(position.left - oldPosition.left) > this.threshold) {
+        stutter = true;
+      }
+    }
+
+    return stutter ? 'hidden' : 'visible';
+  }
+
+  /**
+   * Check which CSS property needs to be changed given the character's current direction
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @returns {('top'|'left')}
+   */
+  getPropertyToChange(direction) {
+    switch (direction) {
+      case this.directions.up:
+      case this.directions.down:
+        return 'top';
+      default:
+        return 'left';
+    }
+  }
+
+  /**
+   * Calculate the velocity for the character's next frame.
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @param {number} velocityPerMs - The distance to travel in a single millisecond
+   * @returns {number} - Moving down or right is positive, while up or left is negative.
+   */
+  getVelocity(direction, velocityPerMs) {
+    switch (direction) {
+      case this.directions.up:
+      case this.directions.left:
+        return velocityPerMs * -1;
+      default:
+        return velocityPerMs;
+    }
+  }
+
+  /**
+   * Determine the next value which will be used to draw the character's position on screen
+   * @param {number} interp - The percentage of the desired timestamp between frames
+   * @param {('top'|'left')} prop - The css property to be changed
+   * @param {({top: number, left: number})} oldPosition - Position during the previous frame
+   * @param {({top: number, left: number})} position - Position during the current frame
+   * @returns {number} - New value for css positioning
+   */
+  calculateNewDrawValue(interp, prop, oldPosition, position) {
+    return oldPosition[prop] + (position[prop] - oldPosition[prop]) * interp;
+  }
+
+  /**
+   * Convert the character's css position to a row-column on the maze array
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @param {number} scaledTileSize - The dimensions of a single tile
+   * @returns {({x: number, y: number})}
+   */
+  determineGridPosition(position, scaledTileSize) {
+    return {
+      x: (position.left / scaledTileSize) + 0.5,
+      y: (position.top / scaledTileSize) + 0.5,
+    };
+  }
+
+  /**
+   * Check to see if a character's desired direction results in turning around
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @param {('up'|'down'|'left'|'right')} desiredDirection - Character's desired orientation
+   * @returns {boolean}
+   */
+  turningAround(direction, desiredDirection) {
+    return desiredDirection === this.getOppositeDirection(direction);
+  }
+
+  /**
+   * Calculate the opposite of a given direction
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @returns {('up'|'down'|'left'|'right')}
+   */
+  getOppositeDirection(direction) {
+    switch (direction) {
+      case this.directions.up:
+        return this.directions.down;
+      case this.directions.down:
+        return this.directions.up;
+      case this.directions.left:
+        return this.directions.right;
+      default:
+        return this.directions.left;
+    }
+  }
+
+  /**
+   * Calculate the proper rounding function to assist with collision detection
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @returns {Function}
+   */
+  determineRoundingFunction(direction) {
+    switch (direction) {
+      case this.directions.up:
+      case this.directions.left:
+        return Math.floor;
+      default:
+        return Math.ceil;
+    }
+  }
+
+  /**
+   * Check to see if the character's next frame results in moving to a new tile on the maze array
+   * @param {({x: number, y: number})} oldPosition - Position during the previous frame
+   * @param {({x: number, y: number})} position - Position during the current frame
+   * @returns {boolean}
+   */
+  changingGridPosition(oldPosition, position) {
+    return (
+      Math.floor(oldPosition.x) !== Math.floor(position.x)
+            || Math.floor(oldPosition.y) !== Math.floor(position.y)
+    );
+  }
+
+  /**
+   * Check to see if the character is attempting to run into a wall of the maze
+   * @param {({x: number, y: number})} desiredNewGridPosition - Character's target tile
+   * @param {Array} mazeArray - The 2D array representing the game's maze
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @returns {boolean}
+   */
+  checkForWallCollision(desiredNewGridPosition, mazeArray, direction) {
+    const roundingFunction = this.determineRoundingFunction(direction, this.directions);
+
+    const desiredX = roundingFunction(desiredNewGridPosition.x);
+    const desiredY = roundingFunction(desiredNewGridPosition.y);
+    let newGridValue;
+
+    if (Array.isArray(mazeArray[desiredY])) {
+      newGridValue = mazeArray[desiredY][desiredX];
+    }
+
+    return (newGridValue === 'X');
+  }
+
+  /**
+   * Returns an object containing the new position and grid position based upon a direction
+   * @param {({top: number, left: number})} position - css position during the current frame
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @param {number} velocityPerMs - The distance to travel in a single millisecond
+   * @param {number} elapsedMs - The amount of MS that have passed since the last update
+   * @param {number} scaledTileSize - The dimensions of a single tile
+   * @returns {object}
+   */
+  determineNewPositions(position, direction, velocityPerMs, elapsedMs, scaledTileSize) {
+    const newPosition = { ...position };
+    newPosition[this.getPropertyToChange(direction)]
+      += this.getVelocity(direction, velocityPerMs) * elapsedMs;
+    const newGridPosition = this.determineGridPosition(newPosition, scaledTileSize);
+
+    return {
+      newPosition,
+      newGridPosition,
+    };
+  }
+
+  /**
+   * Calculates the css position when snapping the character to the x-y grid
+   * @param {({x: number, y: number})} position - The character's position during the current frame
+   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
+   * @param {number} scaledTileSize - The dimensions of a single tile
+   * @returns {({top: number, left: number})}
+   */
+  snapToGrid(position, direction, scaledTileSize) {
+    const newPosition = { ...position };
+    const roundingFunction = this.determineRoundingFunction(direction, this.directions);
+
+    switch (direction) {
+      case this.directions.up:
+      case this.directions.down:
+        newPosition.y = roundingFunction(newPosition.y);
+        break;
+      default:
+        newPosition.x = roundingFunction(newPosition.x);
+        break;
+    }
+
+    return {
+      top: (newPosition.y - 0.5) * scaledTileSize,
+      left: (newPosition.x - 0.5) * scaledTileSize,
+    };
+  }
+
+  /**
+   * Returns a modified position if the character needs to warp
+   * @param {({top: number, left: number})} position - css position during the current frame
+   * @param {({x: number, y: number})} gridPosition - x-y position during the current frame
+   * @param {number} scaledTileSize - The dimensions of a single tile
+   * @returns {({top: number, left: number})}
+   */
+  handleWarp(position, scaledTileSize, mazeArray) {
+    const newPosition = { ...position };
+    const gridPosition = this.determineGridPosition(position, scaledTileSize);
+
+    if (gridPosition.x < -0.75) {
+      newPosition.left = (scaledTileSize * (mazeArray[0].length - 0.75));
+    } else if (gridPosition.x > (mazeArray[0].length - 0.25)) {
+      newPosition.left = (scaledTileSize * -1.25);
+    }
+
+    return newPosition;
+  }
+
+  /**
+   * Advances spritesheet by one frame if needed
+   * @param {Object} character - The character which needs to be animated
+   */
+  advanceSpriteSheet(character) {
+    const {
+      msSinceLastSprite,
+      animationTarget,
+      backgroundOffsetPixels,
+    } = character;
+    const updatedProperties = {
+      msSinceLastSprite,
+      animationTarget,
+      backgroundOffsetPixels,
+    };
+
+    const ready = (character.msSinceLastSprite > character.msBetweenSprites)
+      && character.animate;
+    if (ready) {
+      updatedProperties.msSinceLastSprite = 0;
+
+      if (character.backgroundOffsetPixels
+        < (character.measurement * (character.spriteFrames - 1))
+      ) {
+        updatedProperties.backgroundOffsetPixels += character.measurement;
+      } else if (character.loopAnimation) {
+        updatedProperties.backgroundOffsetPixels = 0;
+      }
+
+      const style = `-${updatedProperties.backgroundOffsetPixels}px 0px`;
+      updatedProperties.animationTarget.style.backgroundPosition = style;
+    }
+
+    return updatedProperties;
+  }
+}
+
+
+/**
+ * Local-only leaderboard for the Nexi Pac-Man hackathon edition.
+ * Persists a top-5 ranking to localStorage. No network calls.
+ */
+class Leaderboard {
+  static get STORAGE_KEY() {
+    return 'nexi:leaderboard';
+  }
+
+  static get LEGACY_HIGH_SCORE_KEY() {
+    return 'highScore';
+  }
+
+  static get HIGH_SCORE_KEY() {
+    return 'nexi:highScore';
+  }
+
+  static get MAX_ENTRIES() {
+    return 5;
+  }
+
+  /**
+   * Loads the stored ranking. Falls back to an empty list and migrates the
+   * legacy highScore key when present so existing players keep their record.
+   * @returns {Array<{initials:string, score:number, shield:string, settlements:number}>}
+   */
+  static load() {
+    let entries = [];
+    try {
+      const raw = localStorage.getItem(Leaderboard.STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          entries = parsed;
+        }
+      }
+    } catch (e) {
+      entries = [];
+    }
+
+    if (entries.length === 0) {
+      const legacy = localStorage.getItem(Leaderboard.LEGACY_HIGH_SCORE_KEY);
+      if (legacy && !Number.isNaN(Number(legacy))) {
+        entries = [{
+          initials: 'YOU',
+          score: Number(legacy),
+          shield: 'contactless',
+          settlements: 0,
+        }];
+      }
+    }
+
+    return entries;
+  }
+
+  /**
+   * Persists the ranking back to localStorage.
+   * @param {Array} entries
+   */
+  static save(entries) {
+    localStorage.setItem(Leaderboard.STORAGE_KEY, JSON.stringify(entries));
+    if (entries.length > 0) {
+      const top = entries.reduce((best, current) => (
+        current.score > best.score ? current : best
+      ), entries[0]);
+      localStorage.setItem(Leaderboard.HIGH_SCORE_KEY, String(top.score));
+    }
+  }
+
+  /**
+   * Returns true when the given score would enter the local top 5.
+   * @param {number} score
+   * @returns {boolean}
+   */
+  static qualifies(score) {
+    const entries = Leaderboard.load();
+    if (entries.length < Leaderboard.MAX_ENTRIES) {
+      return score > 0;
+    }
+    const lowest = entries.reduce((min, current) => (
+      current.score < min ? current.score : min
+    ), entries[0].score);
+    return score > lowest;
+  }
+
+  /**
+   * Inserts a new entry, sorts, and truncates to the maximum size.
+   * @param {{initials:string, score:number, shield:string, settlements:number}} entry
+   * @returns {Array}
+   */
+  static insert(entry) {
+    const entries = Leaderboard.load();
+    entries.push({
+      initials: entry.initials || 'YOU',
+      score: Number(entry.score) || 0,
+      shield: entry.shield || 'contactless',
+      settlements: Number(entry.settlements) || 0,
+    });
+    entries.sort((a, b) => b.score - a.score);
+    const trimmed = entries.slice(0, Leaderboard.MAX_ENTRIES);
+    Leaderboard.save(trimmed);
+    return trimmed;
+  }
+
+  /**
+   * Reads the highest stored score, or 0 when the storage is empty.
+   * @returns {number}
+   */
+  static bestScore() {
+    const entries = Leaderboard.load();
+    if (entries.length === 0) {
+      return 0;
+    }
+    return entries[0].score;
+  }
+}
+
+
+/**
+ * Utility helpers used by GameCoordinator to brand UI labels and pop-up
+ * texts without leaking markup across the codebase.
+ */
+class NexiTheme {
+  static get TEXTS() {
+    return {
+      ready: 'AUTHORIZE',
+      gameOver: 'DECLINED',
+      insertCoin: '1 CREDIT',
+      paused: 'SESSION PAUSED',
+      oneUp: '1UP',
+      highScore: 'ioSi POINTS',
+      shieldLabels: {
+        contactless: 'CONTACTLESS',
+        antifraud: 'ANTI-FRAUD',
+        pos: 'POS',
+        wallet: 'WALLET',
+        qr: 'QR-PAY',
+        token: 'TOKEN',
+      },
+    };
+  }
+
+  /**
+   * Returns a friendly shield label used in the HUD and leaderboard.
+   * @param {string} shield
+   * @returns {string}
+   */
+  static shieldLabel(shield) {
+    return NexiTheme.TEXTS.shieldLabels[shield] || 'CONTACTLESS';
+  }
+
+  /**
+   * Maps a fruit point value to the Nexi shield chip name. Falls back to the
+   * raw point value when the point table does not match.
+   * @param {number} points
+   * @returns {string}
+   */
+  static shieldForPoints(points) {
+    if (points >= 5000) {
+      return 'token';
+    }
+    if (points >= 2000) {
+      return 'qr';
+    }
+    if (points >= 700) {
+      return 'wallet';
+    }
+    if (points >= 300) {
+      return 'pos';
+    }
+    return 'contactless';
+  }
+
+  /**
+   * Returns a CSS class for a given shield chip.
+   * @param {string} shield
+   * @returns {string}
+   */
+  static shieldChipClass(shield) {
+    return `fruit-chip ${shield}`;
+  }
+}
+
+
+class SoundManager {
+  constructor() {
+    this.baseUrl = 'app/style/audio/';
+    this.fileFormat = 'mp3';
+    this.masterVolume = 1;
+    this.paused = false;
+    this.cutscene = true;
+
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    this.ambience = new AudioContext();
+
+    // Dedicated AudioContext for dot sounds (mobile optimization)
+    this.dotContext = new AudioContext();
+    this.dotGain = this.dotContext.createGain();
+    this.dotGain.gain.value = 1;
+    this.dotGain.connect(this.dotContext.destination);
+
+    // Pre-load dot sound buffers
+    this.dotBuffers = {};
+    this.initializeDotSounds();
+
+    // Dot sound state
+    this.dotSound = 0; // Will alternate between 1 and 2
+    this.queuedDotSound = false;
+    this.dotPlayerActive = false;
+  }
+
+  /**
+   * Pre-loads both dot sound buffers for instant playback
+   */
+  async initializeDotSounds() {
+    const [response1, response2] = await Promise.all([
+      fetch(`${this.baseUrl}dot_1.${this.fileFormat}`),
+      fetch(`${this.baseUrl}dot_2.${this.fileFormat}`),
+    ]);
+
+    const [arrayBuffer1, arrayBuffer2] = await Promise.all([
+      response1.arrayBuffer(),
+      response2.arrayBuffer(),
+    ]);
+
+    const [audioBuffer1, audioBuffer2] = await Promise.all([
+      this.dotContext.decodeAudioData(arrayBuffer1),
+      this.dotContext.decodeAudioData(arrayBuffer2),
+    ]);
+
+    this.dotBuffers[1] = audioBuffer1;
+    this.dotBuffers[2] = audioBuffer2;
+  }
+
+  /**
+   * Sets the cutscene flag to determine if players should be able to resume ambience
+   * @param {Boolean} newValue
+   */
+  setCutscene(newValue) {
+    this.cutscene = newValue;
+  }
+
+  /**
+   * Sets the master volume for all sounds and stops/resumes ambience
+   * @param {(0|1)} newVolume
+   */
+  setMasterVolume(newVolume) {
+    this.masterVolume = newVolume;
+
+    if (this.soundEffect) {
+      this.soundEffect.volume = this.masterVolume;
+    }
+
+    // Update dot sound gain
+    if (this.dotGain) {
+      this.dotGain.gain.value = this.masterVolume;
+    }
+
+    if (this.masterVolume === 0) {
+      this.stopAmbience();
+    } else {
+      this.resumeAmbience(this.paused);
+    }
+  }
+
+  /**
+   * Plays a single sound effect
+   * @param {String} sound
+   */
+  play(sound) {
+    this.soundEffect = new Audio(`${this.baseUrl}${sound}.${this.fileFormat}`);
+    this.soundEffect.volume = this.masterVolume;
+    this.soundEffect.play();
+  }
+
+  /**
+   * Special method for eating dots. The dots should alternate between two
+   * sound effects, but not too quickly. Uses pre-loaded AudioBuffers for
+   * instant playback on mobile.
+   */
+  playDotSound() {
+    this.queuedDotSound = true;
+
+    if (!this.dotPlayerActive && this.dotBuffers[1] && this.dotBuffers[2]) {
+      this.queuedDotSound = false;
+      this.dotPlayerActive = true;
+
+      // Alternate between dot sounds
+      this.dotSound = (this.dotSound === 1) ? 2 : 1;
+
+      // Create a new BufferSourceNode (cheap operation)
+      const source = this.dotContext.createBufferSource();
+      source.buffer = this.dotBuffers[this.dotSound];
+      source.connect(this.dotGain);
+
+      // Play immediately
+      source.start(0);
+
+      // Use setTimeout with buffer duration + 100ms gap to preserve "wa ka" timing
+      const { duration } = this.dotBuffers[this.dotSound];
+      setTimeout(() => {
+        this.dotSoundEnded();
+      }, (duration * 1000) + 100);
+    }
+  }
+
+  /**
+   * Called when a dot sound finishes playing. Plays another dot sound if queued.
+   */
+  dotSoundEnded() {
+    this.dotPlayerActive = false;
+
+    if (this.queuedDotSound) {
+      this.playDotSound();
+    }
+  }
+
+  /**
+   * Loops an ambient sound
+   * @param {String} sound
+   */
+  async setAmbience(sound, keepCurrentAmbience) {
+    if (!this.fetchingAmbience && !this.cutscene) {
+      if (!keepCurrentAmbience) {
+        this.currentAmbience = sound;
+        this.paused = false;
+      } else {
+        this.paused = true;
+      }
+
+      if (this.ambienceSource) {
+        this.ambienceSource.stop();
+      }
+
+      if (this.masterVolume !== 0) {
+        this.fetchingAmbience = true;
+        const response = await fetch(
+          `${this.baseUrl}${sound}.${this.fileFormat}`,
+        );
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await this.ambience.decodeAudioData(arrayBuffer);
+
+        this.ambienceSource = this.ambience.createBufferSource();
+        this.ambienceSource.buffer = audioBuffer;
+        this.ambienceSource.connect(this.ambience.destination);
+        this.ambienceSource.loop = true;
+        this.ambienceSource.start();
+
+        this.fetchingAmbience = false;
+      }
+    }
+  }
+
+  /**
+   * Resumes the ambience
+   */
+  resumeAmbience(paused) {
+    if (this.ambienceSource) {
+      // Resetting the ambience since an AudioBufferSourceNode can only
+      // have 'start()' called once
+      if (paused) {
+        this.setAmbience('pause_beat', true);
+      } else {
+        this.setAmbience(this.currentAmbience);
+      }
+    }
+  }
+
+  /**
+   * Stops the ambience
+   */
+  stopAmbience() {
+    if (this.ambienceSource) {
+      this.ambienceSource.stop();
+    }
+  }
+}
+
+
+class Timer {
+  constructor(callback, delay) {
+    this.callback = callback;
+    this.remaining = delay;
+    this.resume();
+  }
+
+  /**
+   * Pauses the timer marks whether the pause came from the player
+   * or the system
+   * @param {Boolean} systemPause
+   */
+  pause(systemPause) {
+    window.clearTimeout(this.timerId);
+    this.remaining -= new Date() - this.start;
+    this.oldTimerId = this.timerId;
+
+    if (systemPause) {
+      this.pausedBySystem = true;
+    }
+  }
+
+  /**
+   * Creates a new setTimeout based upon the remaining time, giving the
+   * illusion of 'resuming' the old setTimeout
+   * @param {Boolean} systemResume
+   */
+  resume(systemResume) {
+    if (systemResume || !this.pausedBySystem) {
+      this.pausedBySystem = false;
+
+      this.start = new Date();
+      this.timerId = window.setTimeout(() => {
+        this.callback();
+        window.dispatchEvent(new CustomEvent('removeTimer', {
+          detail: {
+            timer: this,
+          },
+        }));
+      }, this.remaining);
+
+      if (!this.oldTimerId) {
+        window.dispatchEvent(new CustomEvent('addTimer', {
+          detail: {
+            timer: this,
+          },
+        }));
+      }
+    }
+  }
+}
+
+
 class Ghost {
   constructor(scaledTileSize, mazeArray, pacman, name, level, characterUtil, blinky) {
     this.scaledTileSize = scaledTileSize;
@@ -166,12 +869,6 @@ class Ghost {
    * @param {('chase'|'scatter'|'scared'|'eyes')} mode - The character's behavior mode
    */
   setSpriteSheet(name, direction, mode) {
-    let emotion = '';
-    if (this.defaultSpeed !== this.slowSpeed) {
-      emotion = (this.defaultSpeed === this.mediumSpeed)
-        ? '_annoyed' : '_angry';
-    }
-
     if (mode === 'scared') {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
         + `spriteSheets/characters/ghosts/scared_${this.scaredColor}.svg)`;
@@ -180,8 +877,7 @@ class Ghost {
         + `spriteSheets/characters/ghosts/eyes_${direction}.svg)`;
     } else {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
-        + `spriteSheets/characters/ghosts/${name}/${name}_${direction}`
-        + `${emotion}.svg)`;
+        + `spriteSheets/characters/ghosts/cash/cash_${direction}.svg)`;
     }
   }
 
@@ -1080,6 +1776,321 @@ class Pacman {
 }
 
 
+class Pickup {
+  constructor(type, scaledTileSize, column, row, pacman, mazeDiv, points) {
+    this.type = type;
+    this.pacman = pacman;
+    this.mazeDiv = mazeDiv;
+    this.points = points;
+    this.nearPacman = false;
+
+    this.fruitImages = {
+      100: 'card_contactless',
+      300: 'card_coral',
+      500: 'card_virtual',
+      700: 'card_business',
+      1000: 'token_secure',
+      2000: 'token_premium',
+      3000: 'token_black',
+      5000: 'token_vault',
+    };
+
+    this.setStyleMeasurements(type, scaledTileSize, column, row, points);
+  }
+
+  /**
+   * Resets the pickup's visibility
+   */
+  reset() {
+    this.animationTarget.style.visibility = (
+      this.type === 'fruit'
+      || this.type === 'contactless'
+      || this.type === 'otp'
+    )
+      ? 'hidden' : 'visible';
+  }
+
+  /**
+   * Sets various style measurements for the pickup depending on its type
+   * @param {('pacdot'|'powerPellet'|'fruit'|'contactless'|'otp')} type - The classification of pickup
+   * @param {number} scaledTileSize
+   * @param {number} column
+   * @param {number} row
+   * @param {number} points
+   */
+  setStyleMeasurements(type, scaledTileSize, column, row, points) {
+    if (type === 'pacdot') {
+      this.size = scaledTileSize * 0.25;
+      this.x = (column * scaledTileSize) + ((scaledTileSize / 8) * 3);
+      this.y = (row * scaledTileSize) + ((scaledTileSize / 8) * 3);
+    } else if (type === 'powerPellet') {
+      this.size = scaledTileSize;
+      this.x = (column * scaledTileSize);
+      this.y = (row * scaledTileSize);
+    } else {
+      this.size = scaledTileSize * 2;
+      this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
+      this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
+    }
+
+    this.center = {
+      x: column * scaledTileSize,
+      y: row * scaledTileSize,
+    };
+
+    this.animationTarget = document.createElement('div');
+    this.animationTarget.style.position = 'absolute';
+    this.animationTarget.style.backgroundSize = `${this.size}px`;
+    this.animationTarget.style.backgroundImage = this.determineImage(type, points);
+    this.animationTarget.style.height = `${this.size}px`;
+    this.animationTarget.style.width = `${this.size}px`;
+    this.animationTarget.style.top = `${this.y}px`;
+    this.animationTarget.style.left = `${this.x}px`;
+    this.mazeDiv.appendChild(this.animationTarget);
+
+    if (type === 'powerPellet') {
+      this.animationTarget.classList.add('power-pellet');
+    }
+
+    this.reset();
+  }
+
+  /**
+   * Determines the Pickup image based on type and point value
+   * @param {('pacdot'|'powerPellet'|'fruit'|'contactless'|'otp')} type - The classification of pickup
+   * @param {Number} points
+   * @returns {String}
+   */
+  determineImage(type, points) {
+    let image = '';
+
+    if (type === 'fruit') {
+      image = this.fruitImages[points] || 'card_contactless';
+    } else if (type === 'powerPellet') {
+      image = this.powerPelletVariant || 'power_card_blue';
+    } else if (type === 'contactless') {
+      image = 'card_contactless';
+    } else if (type === 'otp') {
+      return 'url(app/style/graphics/spriteSheets/pickups/otp.svg)';
+    } else {
+      image = 'payment_dot';
+    }
+
+    return `url(app/style/graphics/nexi/${image}.svg)`;
+  }
+
+  /**
+   * Shows a bonus fruit, resetting its point value and image
+   * @param {number} points
+   */
+  showFruit(points) {
+    this.points = points;
+    this.animationTarget.style.backgroundImage = this.determineImage(this.type, points);
+    this.animationTarget.style.visibility = 'visible';
+  }
+
+  /**
+   * Makes the fruit invisible (happens if Pacman was too slow)
+   */
+  hideFruit() {
+    this.animationTarget.style.visibility = 'hidden';
+  }
+
+  /**
+   * Shows the Contactless pickup at a maze coordinate
+   * @param {number} column
+   * @param {number} row
+   * @param {number} scaledTileSize
+   */
+  showContactless(column, row, scaledTileSize) {
+    this.size = scaledTileSize * 2;
+    this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
+    this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
+    this.center = {
+      x: column * scaledTileSize,
+      y: row * scaledTileSize,
+    };
+
+    this.animationTarget.style.backgroundImage = this.determineImage(this.type);
+    this.animationTarget.style.backgroundSize = `${this.size}px`;
+    this.animationTarget.style.height = `${this.size}px`;
+    this.animationTarget.style.width = `${this.size}px`;
+    this.animationTarget.style.top = `${this.y}px`;
+    this.animationTarget.style.left = `${this.x}px`;
+    this.animationTarget.style.visibility = 'visible';
+  }
+
+  /**
+   * Hides the Contactless pickup
+   */
+  hideContactless() {
+    this.animationTarget.style.visibility = 'hidden';
+  }
+
+  /**
+   * Shows the OTP pickup at a maze coordinate
+   * @param {number} column
+   * @param {number} row
+   * @param {number} scaledTileSize
+   */
+  showOtp(column, row, scaledTileSize) {
+    this.size = scaledTileSize * 2;
+    this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
+    this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
+    this.center = {
+      x: column * scaledTileSize,
+      y: row * scaledTileSize,
+    };
+
+    this.animationTarget.style.backgroundImage = this.determineImage(this.type);
+    this.animationTarget.style.backgroundSize = `${this.size}px`;
+    this.animationTarget.style.height = `${this.size}px`;
+    this.animationTarget.style.width = `${this.size}px`;
+    this.animationTarget.style.top = `${this.y}px`;
+    this.animationTarget.style.left = `${this.x}px`;
+    this.animationTarget.style.visibility = 'visible';
+  }
+
+  /**
+   * Hides the OTP pickup
+   */
+  hideOtp() {
+    this.animationTarget.style.visibility = 'hidden';
+  }
+
+  /**
+   * Returns true if the Pickup is touching a bounding box at Pacman's center
+   * @param {({ x: number, y: number, size: number})} pickup
+   * @param {({ x: number, y: number, size: number})} originalPacman
+   */
+  checkForCollision(pickup, originalPacman) {
+    const pacman = { ...originalPacman };
+
+    pacman.x += (pacman.size * 0.25);
+    pacman.y += (pacman.size * 0.25);
+    pacman.size /= 2;
+
+    return (pickup.x < pacman.x + pacman.size
+      && pickup.x + pickup.size > pacman.x
+      && pickup.y < pacman.y + pacman.size
+      && pickup.y + pickup.size > pacman.y);
+  }
+
+  /**
+   * Checks to see if the pickup is close enough to Pacman to be considered for collision detection
+   * @param {number} maxDistance - The maximum distance Pacman can travel per cycle
+   * @param {({ x:number, y:number })} pacmanCenter - The center of Pacman's hitbox
+   * @param {Boolean} debugging - Flag to change the appearance of pickups for testing
+   */
+  checkPacmanProximity(maxDistance, pacmanCenter, debugging) {
+    if (this.animationTarget.style.visibility !== 'hidden') {
+      const distance = Math.sqrt(
+        ((this.center.x - pacmanCenter.x) ** 2)
+        + ((this.center.y - pacmanCenter.y) ** 2),
+      );
+
+      this.nearPacman = (distance <= maxDistance);
+
+      if (debugging) {
+        this.animationTarget.style.background = this.nearPacman
+          ? 'lime' : 'red';
+      }
+    }
+  }
+
+  /**
+   * Checks if the pickup is visible and close to Pacman
+   * @returns {Boolean}
+   */
+  shouldCheckForCollision() {
+    return this.animationTarget.style.visibility !== 'hidden'
+      && this.nearPacman;
+  }
+
+  /**
+   * Checks if a pacdot is inside Pacman's active Contactless radius
+   * @returns {Boolean}
+   */
+  shouldCollectContactless() {
+    if (
+      this.type !== 'pacdot'
+      || this.animationTarget.style.visibility === 'hidden'
+      || !this.pacman.contactlessRadius
+    ) {
+      return false;
+    }
+
+    const pacmanCenter = {
+      x: this.pacman.position.left + (this.pacman.measurement / 2),
+      y: this.pacman.position.top + (this.pacman.measurement / 2),
+    };
+    const distance = Math.sqrt(
+      ((this.center.x - pacmanCenter.x) ** 2)
+      + ((this.center.y - pacmanCenter.y) ** 2),
+    );
+
+    return distance <= this.pacman.contactlessRadius;
+  }
+
+  /**
+   * Collects the pickup and emits the relevant game events
+   */
+  collect() {
+    this.animationTarget.style.visibility = 'hidden';
+
+    if (this.type === 'contactless') {
+      window.dispatchEvent(new Event('contactlessMode'));
+      return;
+    }
+
+    if (this.type === 'otp') {
+      window.dispatchEvent(new Event('otpMode'));
+      return;
+    }
+
+    if (!['fruit', 'pacdot', 'powerPellet'].includes(this.type)) {
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent('awardPoints', {
+      detail: {
+        points: this.points,
+        type: this.type,
+      },
+    }));
+
+    if (this.type === 'pacdot') {
+      window.dispatchEvent(new Event('dotEaten'));
+    } else if (this.type === 'powerPellet') {
+      window.dispatchEvent(new Event('dotEaten'));
+      window.dispatchEvent(new Event('powerUp'));
+    }
+  }
+
+  /**
+   * If the Pickup is still visible, it checks to see if it is colliding with Pacman.
+   * It will turn itself invisible and cease collision-detection after the first
+   * collision with Pacman.
+   */
+  update() {
+    const colliding = this.shouldCheckForCollision()
+      && this.checkForCollision({
+        x: this.x,
+        y: this.y,
+        size: this.size,
+      }, {
+        x: this.pacman.position.left,
+        y: this.pacman.position.top,
+        size: this.pacman.measurement,
+      });
+
+    if (colliding || this.shouldCollectContactless()) {
+      this.collect();
+    }
+  }
+}
+
+
 class GameCoordinator {
   constructor() {
     this.gameUi = document.getElementById('game-ui');
@@ -1402,6 +2413,12 @@ class GameCoordinator {
         `${imgBase}characters/pacman/pacman_left.svg`,
         `${imgBase}characters/pacman/pacman_right.svg`,
         `${imgBase}characters/pacman/pacman_up.svg`,
+
+        // Cash enemies
+        `${imgBase}characters/ghosts/cash/cash_down.svg`,
+        `${imgBase}characters/ghosts/cash/cash_left.svg`,
+        `${imgBase}characters/ghosts/cash/cash_right.svg`,
+        `${imgBase}characters/ghosts/cash/cash_up.svg`,
 
         // Blinky
         `${imgBase}characters/ghosts/blinky/blinky_down_angry.svg`,
@@ -3240,1020 +4257,330 @@ class GameEngine {
 }
 
 
-class Pickup {
-  constructor(type, scaledTileSize, column, row, pacman, mazeDiv, points) {
-    this.type = type;
-    this.pacman = pacman;
-    this.mazeDiv = mazeDiv;
-    this.points = points;
-    this.nearPacman = false;
-
-    this.fruitImages = {
-      100: 'card_contactless',
-      300: 'card_coral',
-      500: 'card_virtual',
-      700: 'card_business',
-      1000: 'token_secure',
-      2000: 'token_premium',
-      3000: 'token_black',
-      5000: 'token_vault',
-    };
-
-    this.setStyleMeasurements(type, scaledTileSize, column, row, points);
+/* istanbul ignore file */
+(function nexiModeBootstrap() {
+  if (typeof GameCoordinator === 'undefined' || typeof Pickup === 'undefined') {
+    return;
   }
 
-  /**
-   * Resets the pickup's visibility
-   */
-  reset() {
-    this.animationTarget.style.visibility = (
-      this.type === 'fruit'
-      || this.type === 'contactless'
-      || this.type === 'otp'
-    )
-      ? 'hidden' : 'visible';
-  }
+  const nexiFruitImages = {
+    100: 'card_contactless',
+    300: 'card_coral',
+    500: 'card_virtual',
+    700: 'card_business',
+    1000: 'token_secure',
+    2000: 'token_premium',
+    3000: 'token_black',
+    5000: 'token_vault',
+  };
 
-  /**
-   * Sets various style measurements for the pickup depending on its type
-   * @param {('pacdot'|'powerPellet'|'fruit'|'contactless'|'otp')} type - The classification of pickup
-   * @param {number} scaledTileSize
-   * @param {number} column
-   * @param {number} row
-   * @param {number} points
-   */
-  setStyleMeasurements(type, scaledTileSize, column, row, points) {
-    if (type === 'pacdot') {
-      this.size = scaledTileSize * 0.25;
-      this.x = (column * scaledTileSize) + ((scaledTileSize / 8) * 3);
-      this.y = (row * scaledTileSize) + ((scaledTileSize / 8) * 3);
-    } else if (type === 'powerPellet') {
-      this.size = scaledTileSize;
-      this.x = (column * scaledTileSize);
-      this.y = (row * scaledTileSize);
-    } else {
-      this.size = scaledTileSize * 2;
-      this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
-      this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
+  const ghostLabels = {
+    blinky: 'Chargeback',
+    pinky: 'Phishing',
+    inky: 'Skimmer',
+    clyde: 'Spoof Bot',
+  };
+
+  const originalPreloadAssets = GameCoordinator.prototype.preloadAssets;
+  const originalStartButtonClick = GameCoordinator.prototype.startButtonClick;
+  const originalPowerUp = GameCoordinator.prototype.powerUp;
+  const originalAwardPoints = GameCoordinator.prototype.awardPoints;
+  const originalReset = GameCoordinator.prototype.reset;
+  const originalEatGhost = GameCoordinator.prototype.eatGhost;
+  const originalSetUiDimensions = GameCoordinator.prototype.setUiDimensions;
+  const originalSetStyleMeasurements = Pickup.prototype.setStyleMeasurements;
+
+  function scheduleFit(gameCoordinator) {
+    if (!gameCoordinator || typeof gameCoordinator.fitGameToPosScreen !== 'function') {
+      return;
     }
 
-    this.center = {
-      x: column * scaledTileSize,
-      y: row * scaledTileSize,
-    };
-
-    this.animationTarget = document.createElement('div');
-    this.animationTarget.style.position = 'absolute';
-    this.animationTarget.style.backgroundSize = `${this.size}px`;
-    this.animationTarget.style.backgroundImage = this.determineImage(type, points);
-    this.animationTarget.style.height = `${this.size}px`;
-    this.animationTarget.style.width = `${this.size}px`;
-    this.animationTarget.style.top = `${this.y}px`;
-    this.animationTarget.style.left = `${this.x}px`;
-    this.mazeDiv.appendChild(this.animationTarget);
-
-    if (type === 'powerPellet') {
-      this.animationTarget.classList.add('power-pellet');
-    }
-
-    this.reset();
+    const gameCoordinatorRef = gameCoordinator;
+    window.cancelAnimationFrame(gameCoordinatorRef.fitAnimationFrame);
+    gameCoordinatorRef.fitAnimationFrame = window.requestAnimationFrame(() => {
+      gameCoordinatorRef.fitGameToPosScreen();
+    });
   }
 
-  /**
-   * Determines the Pickup image based on type and point value
-   * @param {('pacdot'|'powerPellet'|'fruit'|'contactless'|'otp')} type - The classification of pickup
-   * @param {Number} points
-   * @returns {String}
-   */
-  determineImage(type, points) {
-    let image = '';
+  Pickup.prototype.determineImage = function determineNexiImage(type, points) {
+    let image;
 
     if (type === 'fruit') {
-      image = this.fruitImages[points] || 'card_contactless';
+      image = nexiFruitImages[points] || 'card_contactless';
     } else if (type === 'powerPellet') {
       image = this.powerPelletVariant || 'power_card_blue';
     } else if (type === 'contactless') {
       image = 'card_contactless';
-    } else if (type === 'otp') {
-      return 'url(app/style/graphics/spriteSheets/pickups/otp.svg)';
     } else {
       image = 'payment_dot';
     }
 
     return `url(app/style/graphics/nexi/${image}.svg)`;
-  }
+  };
 
-  /**
-   * Shows a bonus fruit, resetting its point value and image
-   * @param {number} points
-   */
-  showFruit(points) {
-    this.points = points;
-    this.animationTarget.style.backgroundImage = this.determineImage(this.type, points);
-    this.animationTarget.style.visibility = 'visible';
-  }
-
-  /**
-   * Makes the fruit invisible (happens if Pacman was too slow)
-   */
-  hideFruit() {
-    this.animationTarget.style.visibility = 'hidden';
-  }
-
-  /**
-   * Shows the Contactless pickup at a maze coordinate
-   * @param {number} column
-   * @param {number} row
-   * @param {number} scaledTileSize
-   */
-  showContactless(column, row, scaledTileSize) {
-    this.size = scaledTileSize * 2;
-    this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
-    this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
-    this.center = {
-      x: column * scaledTileSize,
-      y: row * scaledTileSize,
-    };
-
-    this.animationTarget.style.backgroundImage = this.determineImage(this.type);
-    this.animationTarget.style.backgroundSize = `${this.size}px`;
-    this.animationTarget.style.height = `${this.size}px`;
-    this.animationTarget.style.width = `${this.size}px`;
-    this.animationTarget.style.top = `${this.y}px`;
-    this.animationTarget.style.left = `${this.x}px`;
-    this.animationTarget.style.visibility = 'visible';
-  }
-
-  /**
-   * Hides the Contactless pickup
-   */
-  hideContactless() {
-    this.animationTarget.style.visibility = 'hidden';
-  }
-
-  /**
-   * Shows the OTP pickup at a maze coordinate
-   * @param {number} column
-   * @param {number} row
-   * @param {number} scaledTileSize
-   */
-  showOtp(column, row, scaledTileSize) {
-    this.size = scaledTileSize * 2;
-    this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
-    this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
-    this.center = {
-      x: column * scaledTileSize,
-      y: row * scaledTileSize,
-    };
-
-    this.animationTarget.style.backgroundImage = this.determineImage(this.type);
-    this.animationTarget.style.backgroundSize = `${this.size}px`;
-    this.animationTarget.style.height = `${this.size}px`;
-    this.animationTarget.style.width = `${this.size}px`;
-    this.animationTarget.style.top = `${this.y}px`;
-    this.animationTarget.style.left = `${this.x}px`;
-    this.animationTarget.style.visibility = 'visible';
-  }
-
-  /**
-   * Hides the OTP pickup
-   */
-  hideOtp() {
-    this.animationTarget.style.visibility = 'hidden';
-  }
-
-  /**
-   * Returns true if the Pickup is touching a bounding box at Pacman's center
-   * @param {({ x: number, y: number, size: number})} pickup
-   * @param {({ x: number, y: number, size: number})} originalPacman
-   */
-  checkForCollision(pickup, originalPacman) {
-    const pacman = { ...originalPacman };
-
-    pacman.x += (pacman.size * 0.25);
-    pacman.y += (pacman.size * 0.25);
-    pacman.size /= 2;
-
-    return (pickup.x < pacman.x + pacman.size
-      && pickup.x + pickup.size > pacman.x
-      && pickup.y < pacman.y + pacman.size
-      && pickup.y + pickup.size > pacman.y);
-  }
-
-  /**
-   * Checks to see if the pickup is close enough to Pacman to be considered for collision detection
-   * @param {number} maxDistance - The maximum distance Pacman can travel per cycle
-   * @param {({ x:number, y:number })} pacmanCenter - The center of Pacman's hitbox
-   * @param {Boolean} debugging - Flag to change the appearance of pickups for testing
-   */
-  checkPacmanProximity(maxDistance, pacmanCenter, debugging) {
-    if (this.animationTarget.style.visibility !== 'hidden') {
-      const distance = Math.sqrt(
-        ((this.center.x - pacmanCenter.x) ** 2)
-        + ((this.center.y - pacmanCenter.y) ** 2),
-      );
-
-      this.nearPacman = (distance <= maxDistance);
-
-      if (debugging) {
-        this.animationTarget.style.background = this.nearPacman
-          ? 'lime' : 'red';
-      }
-    }
-  }
-
-  /**
-   * Checks if the pickup is visible and close to Pacman
-   * @returns {Boolean}
-   */
-  shouldCheckForCollision() {
-    return this.animationTarget.style.visibility !== 'hidden'
-      && this.nearPacman;
-  }
-
-  /**
-   * Checks if a pacdot is inside Pacman's active Contactless radius
-   * @returns {Boolean}
-   */
-  shouldCollectContactless() {
-    if (
-      this.type !== 'pacdot'
-      || this.animationTarget.style.visibility === 'hidden'
-      || !this.pacman.contactlessRadius
-    ) {
-      return false;
+  Pickup.prototype.setStyleMeasurements = function patchedSetStyleMeasurements(
+    type,
+    scaledTileSize,
+    column,
+    row,
+    points,
+  ) {
+    if (type === 'powerPellet') {
+      const variants = {
+        '1,3': 'power_card_blue',
+        '26,3': 'power_card_gold',
+        '1,23': 'power_card_gray',
+        '26,23': 'power_card_black',
+      };
+      this.powerPelletVariant = variants[`${column},${row}`] || 'power_card_blue';
     }
 
-    const pacmanCenter = {
-      x: this.pacman.position.left + (this.pacman.measurement / 2),
-      y: this.pacman.position.top + (this.pacman.measurement / 2),
-    };
-    const distance = Math.sqrt(
-      ((this.center.x - pacmanCenter.x) ** 2)
-      + ((this.center.y - pacmanCenter.y) ** 2),
+    originalSetStyleMeasurements.call(
+      this,
+      type,
+      scaledTileSize,
+      column,
+      row,
+      points,
     );
+  };
 
-    return distance <= this.pacman.contactlessRadius;
-  }
-
-  /**
-   * Collects the pickup and emits the relevant game events
-   */
-  collect() {
-    this.animationTarget.style.visibility = 'hidden';
-
-    if (this.type === 'contactless') {
-      window.dispatchEvent(new Event('contactlessMode'));
-      return;
-    }
-
-    if (this.type === 'otp') {
-      window.dispatchEvent(new Event('otpMode'));
-      return;
-    }
-
-    if (!['fruit', 'pacdot', 'powerPellet'].includes(this.type)) {
-      return;
-    }
-
-    window.dispatchEvent(new CustomEvent('awardPoints', {
-      detail: {
-        points: this.points,
-        type: this.type,
-      },
-    }));
-
-    if (this.type === 'pacdot') {
-      window.dispatchEvent(new Event('dotEaten'));
-    } else if (this.type === 'powerPellet') {
-      window.dispatchEvent(new Event('dotEaten'));
-      window.dispatchEvent(new Event('powerUp'));
-    }
-  }
-
-  /**
-   * If the Pickup is still visible, it checks to see if it is colliding with Pacman.
-   * It will turn itself invisible and cease collision-detection after the first
-   * collision with Pacman.
-   */
-  update() {
-    const colliding = this.shouldCheckForCollision()
-      && this.checkForCollision({
-        x: this.x,
-        y: this.y,
-        size: this.size,
-      }, {
-        x: this.pacman.position.left,
-        y: this.pacman.position.top,
-        size: this.pacman.measurement,
-      });
-
-    if (colliding || this.shouldCollectContactless()) {
-      this.collect();
-    }
-  }
-}
-
-
-class CharacterUtil {
-  constructor(scaledTileSize) {
-    this.scaledTileSize = scaledTileSize;
-    this.threshold = 5 * this.scaledTileSize;
-    this.directions = {
-      up: 'up',
-      down: 'down',
-      left: 'left',
-      right: 'right',
+  function determineBannerVariant(message) {
+    const variants = {
+      'Carta Nexi accettata': 'nexi-card',
+      'Anti-fraud shield online': 'nexi-security',
+      'Demo live sul POS': 'nexi-demo',
     };
+
+    return variants[message] || 'nexi-info';
   }
 
-  /**
-   * Check if a given character has moved more than five in-game tiles during a frame.
-   * If so, we want to temporarily hide the object to avoid 'animation stutter'.
-   * @param {({top: number, left: number})} position - Position during the current frame
-   * @param {({top: number, left: number})} oldPosition - Position during the previous frame
-   * @returns {('hidden'|'visible')} - The new 'visibility' css property value for the character.
-   */
-  checkForStutter(position, oldPosition) {
-    let stutter = false;
+  GameCoordinator.prototype.setupNexiBranding = function setupNexiBranding() {
+    const status = document.getElementById('nexi-status');
+    this.nexiStatus = status;
 
-    if (position && oldPosition) {
-      if (Math.abs(position.top - oldPosition.top) > this.threshold
-        || Math.abs(position.left - oldPosition.left) > this.threshold) {
-        stutter = true;
+    Object.keys(ghostLabels).forEach((ghostId) => {
+      const element = document.getElementById(ghostId);
+      if (element) {
+        element.dataset.label = ghostLabels[ghostId];
       }
-    }
-
-    return stutter ? 'hidden' : 'visible';
-  }
-
-  /**
-   * Check which CSS property needs to be changed given the character's current direction
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @returns {('top'|'left')}
-   */
-  getPropertyToChange(direction) {
-    switch (direction) {
-      case this.directions.up:
-      case this.directions.down:
-        return 'top';
-      default:
-        return 'left';
-    }
-  }
-
-  /**
-   * Calculate the velocity for the character's next frame.
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @param {number} velocityPerMs - The distance to travel in a single millisecond
-   * @returns {number} - Moving down or right is positive, while up or left is negative.
-   */
-  getVelocity(direction, velocityPerMs) {
-    switch (direction) {
-      case this.directions.up:
-      case this.directions.left:
-        return velocityPerMs * -1;
-      default:
-        return velocityPerMs;
-    }
-  }
-
-  /**
-   * Determine the next value which will be used to draw the character's position on screen
-   * @param {number} interp - The percentage of the desired timestamp between frames
-   * @param {('top'|'left')} prop - The css property to be changed
-   * @param {({top: number, left: number})} oldPosition - Position during the previous frame
-   * @param {({top: number, left: number})} position - Position during the current frame
-   * @returns {number} - New value for css positioning
-   */
-  calculateNewDrawValue(interp, prop, oldPosition, position) {
-    return oldPosition[prop] + (position[prop] - oldPosition[prop]) * interp;
-  }
-
-  /**
-   * Convert the character's css position to a row-column on the maze array
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @param {number} scaledTileSize - The dimensions of a single tile
-   * @returns {({x: number, y: number})}
-   */
-  determineGridPosition(position, scaledTileSize) {
-    return {
-      x: (position.left / scaledTileSize) + 0.5,
-      y: (position.top / scaledTileSize) + 0.5,
-    };
-  }
-
-  /**
-   * Check to see if a character's desired direction results in turning around
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @param {('up'|'down'|'left'|'right')} desiredDirection - Character's desired orientation
-   * @returns {boolean}
-   */
-  turningAround(direction, desiredDirection) {
-    return desiredDirection === this.getOppositeDirection(direction);
-  }
-
-  /**
-   * Calculate the opposite of a given direction
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @returns {('up'|'down'|'left'|'right')}
-   */
-  getOppositeDirection(direction) {
-    switch (direction) {
-      case this.directions.up:
-        return this.directions.down;
-      case this.directions.down:
-        return this.directions.up;
-      case this.directions.left:
-        return this.directions.right;
-      default:
-        return this.directions.left;
-    }
-  }
-
-  /**
-   * Calculate the proper rounding function to assist with collision detection
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @returns {Function}
-   */
-  determineRoundingFunction(direction) {
-    switch (direction) {
-      case this.directions.up:
-      case this.directions.left:
-        return Math.floor;
-      default:
-        return Math.ceil;
-    }
-  }
-
-  /**
-   * Check to see if the character's next frame results in moving to a new tile on the maze array
-   * @param {({x: number, y: number})} oldPosition - Position during the previous frame
-   * @param {({x: number, y: number})} position - Position during the current frame
-   * @returns {boolean}
-   */
-  changingGridPosition(oldPosition, position) {
-    return (
-      Math.floor(oldPosition.x) !== Math.floor(position.x)
-            || Math.floor(oldPosition.y) !== Math.floor(position.y)
-    );
-  }
-
-  /**
-   * Check to see if the character is attempting to run into a wall of the maze
-   * @param {({x: number, y: number})} desiredNewGridPosition - Character's target tile
-   * @param {Array} mazeArray - The 2D array representing the game's maze
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @returns {boolean}
-   */
-  checkForWallCollision(desiredNewGridPosition, mazeArray, direction) {
-    const roundingFunction = this.determineRoundingFunction(direction, this.directions);
-
-    const desiredX = roundingFunction(desiredNewGridPosition.x);
-    const desiredY = roundingFunction(desiredNewGridPosition.y);
-    let newGridValue;
-
-    if (Array.isArray(mazeArray[desiredY])) {
-      newGridValue = mazeArray[desiredY][desiredX];
-    }
-
-    return (newGridValue === 'X');
-  }
-
-  /**
-   * Returns an object containing the new position and grid position based upon a direction
-   * @param {({top: number, left: number})} position - css position during the current frame
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @param {number} velocityPerMs - The distance to travel in a single millisecond
-   * @param {number} elapsedMs - The amount of MS that have passed since the last update
-   * @param {number} scaledTileSize - The dimensions of a single tile
-   * @returns {object}
-   */
-  determineNewPositions(position, direction, velocityPerMs, elapsedMs, scaledTileSize) {
-    const newPosition = { ...position };
-    newPosition[this.getPropertyToChange(direction)]
-      += this.getVelocity(direction, velocityPerMs) * elapsedMs;
-    const newGridPosition = this.determineGridPosition(newPosition, scaledTileSize);
-
-    return {
-      newPosition,
-      newGridPosition,
-    };
-  }
-
-  /**
-   * Calculates the css position when snapping the character to the x-y grid
-   * @param {({x: number, y: number})} position - The character's position during the current frame
-   * @param {('up'|'down'|'left'|'right')} direction - The character's current travel orientation
-   * @param {number} scaledTileSize - The dimensions of a single tile
-   * @returns {({top: number, left: number})}
-   */
-  snapToGrid(position, direction, scaledTileSize) {
-    const newPosition = { ...position };
-    const roundingFunction = this.determineRoundingFunction(direction, this.directions);
-
-    switch (direction) {
-      case this.directions.up:
-      case this.directions.down:
-        newPosition.y = roundingFunction(newPosition.y);
-        break;
-      default:
-        newPosition.x = roundingFunction(newPosition.x);
-        break;
-    }
-
-    return {
-      top: (newPosition.y - 0.5) * scaledTileSize,
-      left: (newPosition.x - 0.5) * scaledTileSize,
-    };
-  }
-
-  /**
-   * Returns a modified position if the character needs to warp
-   * @param {({top: number, left: number})} position - css position during the current frame
-   * @param {({x: number, y: number})} gridPosition - x-y position during the current frame
-   * @param {number} scaledTileSize - The dimensions of a single tile
-   * @returns {({top: number, left: number})}
-   */
-  handleWarp(position, scaledTileSize, mazeArray) {
-    const newPosition = { ...position };
-    const gridPosition = this.determineGridPosition(position, scaledTileSize);
-
-    if (gridPosition.x < -0.75) {
-      newPosition.left = (scaledTileSize * (mazeArray[0].length - 0.75));
-    } else if (gridPosition.x > (mazeArray[0].length - 0.25)) {
-      newPosition.left = (scaledTileSize * -1.25);
-    }
-
-    return newPosition;
-  }
-
-  /**
-   * Advances spritesheet by one frame if needed
-   * @param {Object} character - The character which needs to be animated
-   */
-  advanceSpriteSheet(character) {
-    const {
-      msSinceLastSprite,
-      animationTarget,
-      backgroundOffsetPixels,
-    } = character;
-    const updatedProperties = {
-      msSinceLastSprite,
-      animationTarget,
-      backgroundOffsetPixels,
-    };
-
-    const ready = (character.msSinceLastSprite > character.msBetweenSprites)
-      && character.animate;
-    if (ready) {
-      updatedProperties.msSinceLastSprite = 0;
-
-      if (character.backgroundOffsetPixels
-        < (character.measurement * (character.spriteFrames - 1))
-      ) {
-        updatedProperties.backgroundOffsetPixels += character.measurement;
-      } else if (character.loopAnimation) {
-        updatedProperties.backgroundOffsetPixels = 0;
-      }
-
-      const style = `-${updatedProperties.backgroundOffsetPixels}px 0px`;
-      updatedProperties.animationTarget.style.backgroundPosition = style;
-    }
-
-    return updatedProperties;
-  }
-}
-
-
-/**
- * Local-only leaderboard for the Nexi Pac-Man hackathon edition.
- * Persists a top-5 ranking to localStorage. No network calls.
- */
-class Leaderboard {
-  static get STORAGE_KEY() {
-    return 'nexi:leaderboard';
-  }
-
-  static get LEGACY_HIGH_SCORE_KEY() {
-    return 'highScore';
-  }
-
-  static get HIGH_SCORE_KEY() {
-    return 'nexi:highScore';
-  }
-
-  static get MAX_ENTRIES() {
-    return 5;
-  }
-
-  /**
-   * Loads the stored ranking. Falls back to an empty list and migrates the
-   * legacy highScore key when present so existing players keep their record.
-   * @returns {Array<{initials:string, score:number, shield:string, settlements:number}>}
-   */
-  static load() {
-    let entries = [];
-    try {
-      const raw = localStorage.getItem(Leaderboard.STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          entries = parsed;
-        }
-      }
-    } catch (e) {
-      entries = [];
-    }
-
-    if (entries.length === 0) {
-      const legacy = localStorage.getItem(Leaderboard.LEGACY_HIGH_SCORE_KEY);
-      if (legacy && !Number.isNaN(Number(legacy))) {
-        entries = [{
-          initials: 'YOU',
-          score: Number(legacy),
-          shield: 'contactless',
-          settlements: 0,
-        }];
-      }
-    }
-
-    return entries;
-  }
-
-  /**
-   * Persists the ranking back to localStorage.
-   * @param {Array} entries
-   */
-  static save(entries) {
-    localStorage.setItem(Leaderboard.STORAGE_KEY, JSON.stringify(entries));
-    if (entries.length > 0) {
-      const top = entries.reduce((best, current) => (
-        current.score > best.score ? current : best
-      ), entries[0]);
-      localStorage.setItem(Leaderboard.HIGH_SCORE_KEY, String(top.score));
-    }
-  }
-
-  /**
-   * Returns true when the given score would enter the local top 5.
-   * @param {number} score
-   * @returns {boolean}
-   */
-  static qualifies(score) {
-    const entries = Leaderboard.load();
-    if (entries.length < Leaderboard.MAX_ENTRIES) {
-      return score > 0;
-    }
-    const lowest = entries.reduce((min, current) => (
-      current.score < min ? current.score : min
-    ), entries[0].score);
-    return score > lowest;
-  }
-
-  /**
-   * Inserts a new entry, sorts, and truncates to the maximum size.
-   * @param {{initials:string, score:number, shield:string, settlements:number}} entry
-   * @returns {Array}
-   */
-  static insert(entry) {
-    const entries = Leaderboard.load();
-    entries.push({
-      initials: entry.initials || 'YOU',
-      score: Number(entry.score) || 0,
-      shield: entry.shield || 'contactless',
-      settlements: Number(entry.settlements) || 0,
     });
-    entries.sort((a, b) => b.score - a.score);
-    const trimmed = entries.slice(0, Leaderboard.MAX_ENTRIES);
-    Leaderboard.save(trimmed);
-    return trimmed;
-  }
+  };
 
-  /**
-   * Reads the highest stored score, or 0 when the storage is empty.
-   * @returns {number}
-   */
-  static bestScore() {
-    const entries = Leaderboard.load();
-    if (entries.length === 0) {
-      return 0;
+  GameCoordinator.prototype.setStatus = function setStatus(message) {
+    if (this.nexiStatus) {
+      this.nexiStatus.textContent = message;
     }
-    return entries[0].score;
-  }
-}
+  };
 
-
-/**
- * Utility helpers used by GameCoordinator to brand UI labels and pop-up
- * texts without leaking markup across the codebase.
- */
-class NexiTheme {
-  static get TEXTS() {
-    return {
-      ready: 'AUTHORIZE',
-      gameOver: 'DECLINED',
-      insertCoin: '1 CREDIT',
-      paused: 'SESSION PAUSED',
-      oneUp: '1UP',
-      highScore: 'ioSi POINTS',
-      shieldLabels: {
-        contactless: 'CONTACTLESS',
-        antifraud: 'ANTI-FRAUD',
-        pos: 'POS',
-        wallet: 'WALLET',
-        qr: 'QR-PAY',
-        token: 'TOKEN',
-      },
-    };
-  }
-
-  /**
-   * Returns a friendly shield label used in the HUD and leaderboard.
-   * @param {string} shield
-   * @returns {string}
-   */
-  static shieldLabel(shield) {
-    return NexiTheme.TEXTS.shieldLabels[shield] || 'CONTACTLESS';
-  }
-
-  /**
-   * Maps a fruit point value to the Nexi shield chip name. Falls back to the
-   * raw point value when the point table does not match.
-   * @param {number} points
-   * @returns {string}
-   */
-  static shieldForPoints(points) {
-    if (points >= 5000) {
-      return 'token';
-    }
-    if (points >= 2000) {
-      return 'qr';
-    }
-    if (points >= 700) {
-      return 'wallet';
-    }
-    if (points >= 300) {
-      return 'pos';
-    }
-    return 'contactless';
-  }
-
-  /**
-   * Returns a CSS class for a given shield chip.
-   * @param {string} shield
-   * @returns {string}
-   */
-  static shieldChipClass(shield) {
-    return `fruit-chip ${shield}`;
-  }
-}
-
-
-class SoundManager {
-  constructor() {
-    this.baseUrl = 'app/style/audio/';
-    this.fileFormat = 'mp3';
-    this.masterVolume = 1;
-    this.paused = false;
-    this.cutscene = true;
-
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    this.ambience = new AudioContext();
-
-    // Dedicated AudioContext for dot sounds (mobile optimization)
-    this.dotContext = new AudioContext();
-    this.dotGain = this.dotContext.createGain();
-    this.dotGain.gain.value = 1;
-    this.dotGain.connect(this.dotContext.destination);
-
-    // Pre-load dot sound buffers
-    this.dotBuffers = {};
-    this.initializeDotSounds();
-
-    // Dot sound state
-    this.dotSound = 0; // Will alternate between 1 and 2
-    this.queuedDotSound = false;
-    this.dotPlayerActive = false;
-  }
-
-  /**
-   * Pre-loads both dot sound buffers for instant playback
-   */
-  async initializeDotSounds() {
-    const [response1, response2] = await Promise.all([
-      fetch(`${this.baseUrl}dot_1.${this.fileFormat}`),
-      fetch(`${this.baseUrl}dot_2.${this.fileFormat}`),
-    ]);
-
-    const [arrayBuffer1, arrayBuffer2] = await Promise.all([
-      response1.arrayBuffer(),
-      response2.arrayBuffer(),
-    ]);
-
-    const [audioBuffer1, audioBuffer2] = await Promise.all([
-      this.dotContext.decodeAudioData(arrayBuffer1),
-      this.dotContext.decodeAudioData(arrayBuffer2),
-    ]);
-
-    this.dotBuffers[1] = audioBuffer1;
-    this.dotBuffers[2] = audioBuffer2;
-  }
-
-  /**
-   * Sets the cutscene flag to determine if players should be able to resume ambience
-   * @param {Boolean} newValue
-   */
-  setCutscene(newValue) {
-    this.cutscene = newValue;
-  }
-
-  /**
-   * Sets the master volume for all sounds and stops/resumes ambience
-   * @param {(0|1)} newVolume
-   */
-  setMasterVolume(newVolume) {
-    this.masterVolume = newVolume;
-
-    if (this.soundEffect) {
-      this.soundEffect.volume = this.masterVolume;
+  GameCoordinator.prototype.showBanner = function showBanner(message, duration) {
+    if (typeof this.displayPopMessage !== 'function') {
+      return;
     }
 
-    // Update dot sound gain
-    if (this.dotGain) {
-      this.dotGain.gain.value = this.masterVolume;
+    this.displayPopMessage(message, determineBannerVariant(message), duration);
+  };
+
+  GameCoordinator.prototype.showScoreReason = function showScoreReason(points, reason) {
+    if (typeof this.displayPopMessage !== 'function') {
+      return;
     }
 
-    if (this.masterVolume === 0) {
-      this.stopAmbience();
+    this.displayPopMessage(`+${points} IOSI`, 'nexi-score', 1800);
+    this.setStatus(reason);
+  };
+
+  GameCoordinator.prototype.fitGameToPosScreen = function fitGameToPosScreen() {
+    const posShell = document.querySelector('.pos-shell');
+    const screen = document.getElementById('pos-screen-inner');
+    if (!posShell || !screen || !this.gameUi) {
+      return;
+    }
+
+    this.gameUi.style.transform = 'scale(1)';
+    this.gameUi.style.left = '0px';
+    this.gameUi.style.top = '0px';
+    const contentWidth = this.gameUi.offsetWidth;
+    const contentHeight = this.gameUi.offsetHeight;
+
+    if (!contentWidth || !contentHeight) {
+      return;
+    }
+
+    const viewportMargin = window.innerWidth <= 600 ? 16 : 32;
+    const maxShellWidth = Math.max(window.innerWidth - viewportMargin, 320);
+    const shellHeight = posShell.clientHeight;
+    const shellChromeHeight = Math.max(posShell.clientHeight - screen.clientHeight, 0);
+    const shellChromeWidth = Math.max(posShell.clientWidth - screen.clientWidth, 0);
+    const targetScreenHeight = Math.max(shellHeight - shellChromeHeight, 0);
+    const desiredScreenWidth = targetScreenHeight * (contentWidth / contentHeight);
+    const desiredShellWidth = Math.min(desiredScreenWidth + shellChromeWidth, maxShellWidth);
+
+    posShell.style.width = `${Math.max(desiredShellWidth, 320)}px`;
+
+    const screenWidth = screen.clientWidth;
+    const screenHeight = screen.clientHeight;
+    const fitPadding = Math.max(Math.min(screenWidth, screenHeight) * 0.015, 4);
+    const innerWidth = Math.max(screenWidth - (fitPadding * 2), 0);
+    const innerHeight = Math.max(screenHeight - (fitPadding * 2), 0);
+
+    const scale = Math.min(
+      innerWidth / contentWidth,
+      innerHeight / contentHeight,
+    );
+
+    this.gameUi.style.transform = `scale(${scale})`;
+    this.gameUi.style.left = `${(screenWidth - (contentWidth * scale)) / 2}px`;
+    this.gameUi.style.top = `${(screenHeight - (contentHeight * scale)) / 2}px`;
+  };
+
+  GameCoordinator.prototype.startAttractMode = function startAttractMode() {
+    if (this.demoModeStarted) {
+      return;
+    }
+
+    this.demoModeStarted = true;
+    this.demoMode = true;
+    this.leftCover.style.left = '-50%';
+    this.rightCover.style.right = '-50%';
+    this.mainMenu.classList.add('demo-visible');
+
+    this.reset();
+    if (this.firstGame) {
+      this.firstGame = false;
+      this.init();
+    }
+
+    this.ghosts.forEach((ghost) => {
+      const ghostRef = ghost;
+      ghostRef.allowCollision = false;
+    });
+
+    this.startGameplay(false);
+    this.setStatus('Attract mode attivo. Tocca la carta per iniziare.');
+    this.showBanner('Demo live sul POS', 2200);
+
+    const directions = ['up', 'left', 'down', 'right'];
+    this.demoDriver = window.setInterval(() => {
+      const direction = directions[Math.floor(Math.random() * directions.length)];
+      this.changeDirection(direction);
+    }, 650);
+  };
+
+  GameCoordinator.prototype.stopAttractMode = function stopAttractMode() {
+    this.demoMode = false;
+    this.demoModeStarted = false;
+    this.mainMenu.classList.remove('demo-visible');
+    if (Array.isArray(this.activeTimers)) {
+      this.activeTimers.forEach((timer) => {
+        if (timer && timer.timerId) {
+          window.clearTimeout(timer.timerId);
+        }
+      });
+      this.activeTimers = [];
+    }
+    window.clearInterval(this.demoDriver);
+    this.demoDriver = null;
+  };
+
+  GameCoordinator.prototype.preloadAssets = function patchedPreloadAssets() {
+    const result = originalPreloadAssets.call(this);
+
+    if (result && typeof result.then === 'function') {
+      result.then(() => {
+        this.setupNexiBranding();
+        window.addEventListener('resize', () => {
+          scheduleFit(this);
+        });
+
+        if (typeof ResizeObserver !== 'undefined') {
+          this.posScreenObserver = new ResizeObserver(() => {
+            scheduleFit(this);
+          });
+
+          const posShell = document.querySelector('.pos-shell');
+          const posScreen = document.querySelector('.pos-screen');
+
+          if (posShell) {
+            this.posScreenObserver.observe(posShell);
+          }
+
+          if (posScreen) {
+            this.posScreenObserver.observe(posScreen);
+          }
+        }
+
+        window.setTimeout(() => {
+          this.startAttractMode();
+        }, 1700);
+      });
+    }
+
+    return result;
+  };
+
+  GameCoordinator.prototype.reset = function patchedReset() {
+    originalReset.call(this);
+    scheduleFit(this);
+
+    if (this.demoMode) {
+      this.ghosts.forEach((ghost) => {
+        const ghostRef = ghost;
+        ghostRef.allowCollision = false;
+      });
+    }
+  };
+
+  GameCoordinator.prototype.startButtonClick = function patchedStartButtonClick() {
+    if (this.demoMode) {
+      this.stopAttractMode();
+      this.setStatus('Carta autorizzata. Sessione di pagamento avviata.');
+      this.showBanner('Carta Nexi accettata', 2000);
     } else {
-      this.resumeAmbience(this.paused);
+      this.setStatus('Sessione live. Ferma i frodatori.');
     }
-  }
 
-  /**
-   * Plays a single sound effect
-   * @param {String} sound
-   */
-  play(sound) {
-    this.soundEffect = new Audio(`${this.baseUrl}${sound}.${this.fileFormat}`);
-    this.soundEffect.volume = this.masterVolume;
-    this.soundEffect.play();
-  }
+    originalStartButtonClick.call(this);
+  };
 
-  /**
-   * Special method for eating dots. The dots should alternate between two
-   * sound effects, but not too quickly. Uses pre-loaded AudioBuffers for
-   * instant playback on mobile.
-   */
-  playDotSound() {
-    this.queuedDotSound = true;
+  GameCoordinator.prototype.powerUp = function patchedPowerUp() {
+    this.setStatus('Scudo antifrode attivo.');
+    this.showBanner('Anti-fraud shield online', 2400);
+    originalPowerUp.call(this);
+  };
 
-    if (!this.dotPlayerActive && this.dotBuffers[1] && this.dotBuffers[2]) {
-      this.queuedDotSound = false;
-      this.dotPlayerActive = true;
+  GameCoordinator.prototype.awardPoints = function patchedAwardPoints(event) {
+    originalAwardPoints.call(this, event);
 
-      // Alternate between dot sounds
-      this.dotSound = (this.dotSound === 1) ? 2 : 1;
-
-      // Create a new BufferSourceNode (cheap operation)
-      const source = this.dotContext.createBufferSource();
-      source.buffer = this.dotBuffers[this.dotSound];
-      source.connect(this.dotGain);
-
-      // Play immediately
-      source.start(0);
-
-      // Use setTimeout with buffer duration + 100ms gap to preserve "wa ka" timing
-      const { duration } = this.dotBuffers[this.dotSound];
-      setTimeout(() => {
-        this.dotSoundEnded();
-      }, (duration * 1000) + 100);
+    if (!event.detail || !event.detail.type) {
+      return;
     }
-  }
 
-  /**
-   * Called when a dot sound finishes playing. Plays another dot sound if queued.
-   */
-  dotSoundEnded() {
-    this.dotPlayerActive = false;
-
-    if (this.queuedDotSound) {
-      this.playDotSound();
+    if (event.detail.type === 'fruit') {
+      this.setStatus(`Carta premium acquisita: +${event.detail.points} IOSI.`);
+    } else if (event.detail.type === 'powerPellet') {
+      this.setStatus('Token antifrode raccolto.');
     }
-  }
+  };
 
-  /**
-   * Loops an ambient sound
-   * @param {String} sound
-   */
-  async setAmbience(sound, keepCurrentAmbience) {
-    if (!this.fetchingAmbience && !this.cutscene) {
-      if (!keepCurrentAmbience) {
-        this.currentAmbience = sound;
-        this.paused = false;
-      } else {
-        this.paused = true;
-      }
+  GameCoordinator.prototype.eatGhost = function patchedEatGhost(event) {
+    const nextCombo = (this.ghostCombo || 0) + 1;
+    const comboPoints = 100 * (2 ** nextCombo);
+    const { ghost } = event.detail || {};
+    const fraudLabel = ghost && ghost.animationTarget
+      ? ghost.animationTarget.dataset.label
+      : 'Frodatore';
 
-      if (this.ambienceSource) {
-        this.ambienceSource.stop();
-      }
+    this.showScoreReason(
+      comboPoints,
+      `Hai mangiato un frodatore: ${fraudLabel}`,
+    );
+    this.setStatus(`Frode bloccata: ${fraudLabel}. Bonus +${comboPoints} IOSI.`);
+    originalEatGhost.call(this, event);
+  };
 
-      if (this.masterVolume !== 0) {
-        this.fetchingAmbience = true;
-        const response = await fetch(
-          `${this.baseUrl}${sound}.${this.fileFormat}`,
-        );
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await this.ambience.decodeAudioData(arrayBuffer);
-
-        this.ambienceSource = this.ambience.createBufferSource();
-        this.ambienceSource.buffer = audioBuffer;
-        this.ambienceSource.connect(this.ambience.destination);
-        this.ambienceSource.loop = true;
-        this.ambienceSource.start();
-
-        this.fetchingAmbience = false;
-      }
-    }
-  }
-
-  /**
-   * Resumes the ambience
-   */
-  resumeAmbience(paused) {
-    if (this.ambienceSource) {
-      // Resetting the ambience since an AudioBufferSourceNode can only
-      // have 'start()' called once
-      if (paused) {
-        this.setAmbience('pause_beat', true);
-      } else {
-        this.setAmbience(this.currentAmbience);
-      }
-    }
-  }
-
-  /**
-   * Stops the ambience
-   */
-  stopAmbience() {
-    if (this.ambienceSource) {
-      this.ambienceSource.stop();
-    }
-  }
-}
-
-
-class Timer {
-  constructor(callback, delay) {
-    this.callback = callback;
-    this.remaining = delay;
-    this.resume();
-  }
-
-  /**
-   * Pauses the timer marks whether the pause came from the player
-   * or the system
-   * @param {Boolean} systemPause
-   */
-  pause(systemPause) {
-    window.clearTimeout(this.timerId);
-    this.remaining -= new Date() - this.start;
-    this.oldTimerId = this.timerId;
-
-    if (systemPause) {
-      this.pausedBySystem = true;
-    }
-  }
-
-  /**
-   * Creates a new setTimeout based upon the remaining time, giving the
-   * illusion of 'resuming' the old setTimeout
-   * @param {Boolean} systemResume
-   */
-  resume(systemResume) {
-    if (systemResume || !this.pausedBySystem) {
-      this.pausedBySystem = false;
-
-      this.start = new Date();
-      this.timerId = window.setTimeout(() => {
-        this.callback();
-        window.dispatchEvent(new CustomEvent('removeTimer', {
-          detail: {
-            timer: this,
-          },
-        }));
-      }, this.remaining);
-
-      if (!this.oldTimerId) {
-        window.dispatchEvent(new CustomEvent('addTimer', {
-          detail: {
-            timer: this,
-          },
-        }));
-      }
-    }
-  }
-}
-
+  GameCoordinator.prototype.setUiDimensions = function patchedSetUiDimensions() {
+    originalSetUiDimensions.call(this);
+    scheduleFit(this);
+  };
+}());

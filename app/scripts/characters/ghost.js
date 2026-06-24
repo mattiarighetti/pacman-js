@@ -166,12 +166,6 @@ class Ghost {
    * @param {('chase'|'scatter'|'scared'|'eyes')} mode - The character's behavior mode
    */
   setSpriteSheet(name, direction, mode) {
-    let emotion = '';
-    if (this.defaultSpeed !== this.slowSpeed) {
-      emotion = (this.defaultSpeed === this.mediumSpeed)
-        ? '_annoyed' : '_angry';
-    }
-
     if (mode === 'scared') {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
         + `spriteSheets/characters/ghosts/scared_${this.scaredColor}.svg)`;
@@ -180,8 +174,7 @@ class Ghost {
         + `spriteSheets/characters/ghosts/eyes_${direction}.svg)`;
     } else {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
-        + `spriteSheets/characters/ghosts/${name}/${name}_${direction}`
-        + `${emotion}.svg)`;
+        + `spriteSheets/characters/ghosts/cash/cash_${direction}.svg)`;
     }
   }
 
