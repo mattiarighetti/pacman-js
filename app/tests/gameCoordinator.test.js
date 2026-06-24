@@ -36,9 +36,13 @@ describe('gameCoordinator', () => {
 
       hideContactless() {}
 
+      hideOtp() {}
+
       reset() {}
 
       showContactless() {}
+
+      showOtp() {}
     };
     global.Timer = class {
       constructor(callback, delay) {
@@ -279,7 +283,7 @@ describe('gameCoordinator', () => {
         comp.highScore,
         global.localStorage.getItem('highScore'),
       );
-      assert.strictEqual(comp.entityList.length, 7);
+      assert.strictEqual(comp.entityList.length, 8);
       assert.strictEqual(comp.ghosts.length, 4);
       assert.deepEqual(comp.scaredGhosts, []);
       assert.strictEqual(comp.eyeGhosts, 0);
@@ -513,6 +517,7 @@ describe('gameCoordinator', () => {
       assert(global.window.addEventListener.calledWith('dotEaten'));
       assert(global.window.addEventListener.calledWith('powerUp'));
       assert(global.window.addEventListener.calledWith('contactlessMode'));
+      assert(global.window.addEventListener.calledWith('otpMode'));
       assert(global.window.addEventListener.calledWith('eatGhost'));
       assert(global.window.addEventListener.calledWith('addTimer'));
       assert(global.window.addEventListener.calledWith('removeTimer'));
@@ -672,6 +677,17 @@ describe('gameCoordinator', () => {
       assert(!comp.gameEngine.changePausedState.called);
       assert(!comp.pacman.changeDirection.called);
     });
+
+    it('routes keydown events to OTP input while OTP is active', () => {
+      const event = { keyCode: 27 };
+      comp.otpActive = true;
+      comp.handleOtpKeyDown = sinon.fake();
+      comp.handlePauseKey = sinon.fake();
+
+      comp.handleKeyDown(event);
+      assert(comp.handleOtpKeyDown.calledWith(event));
+      assert(!comp.handlePauseKey.called);
+    });
   });
 
   describe('handleSwipe', () => {
@@ -773,6 +789,16 @@ describe('gameCoordinator', () => {
       assert.strictEqual(comp.highScore, 100);
     });
 
+    it('does not let negative points drop the score below zero', () => {
+      comp.points = 100;
+      comp.highScore = 500;
+
+      comp.awardPoints({ detail: { points: -250, type: 'otp' } });
+      assert.strictEqual(comp.points, 0);
+      assert.strictEqual(comp.pointsDisplay.innerText, 0);
+      assert.strictEqual(comp.highScore, 500);
+    });
+
     it('calls displayText when a fruit is eaten', () => {
       comp.points = 0;
       comp.displayText = sinon.fake();
@@ -834,29 +860,29 @@ describe('gameCoordinator', () => {
     });
 
     it('shows a pop message when a point milestone is crossed', () => {
-      comp.displayPointMilestoneMessages(90, 100);
-      assert.deepEqual(comp.shownPopMessageMilestones, [100]);
+      comp.displayPointMilestoneMessages(900, 1000);
+      assert.deepEqual(comp.shownPopMessageMilestones, [1000]);
       assert(comp.displayPopMessage.calledWith('Tap streak!', 'streak'));
     });
 
     it('shows the latest milestone when points jump across multiple thresholds', () => {
-      comp.displayPointMilestoneMessages(90, 600);
-      assert.deepEqual(comp.shownPopMessageMilestones, [100, 500]);
+      comp.displayPointMilestoneMessages(900, 6000);
+      assert.deepEqual(comp.shownPopMessageMilestones, [1000, 2500, 5000]);
       assert(comp.displayPopMessage.calledOnceWith(
-        'Cashback ioSi!',
-        'cashback',
+        'Authorization approved',
+        'approved',
       ));
     });
 
     it('does not show the same milestone twice', () => {
-      comp.shownPopMessageMilestones = [100];
+      comp.shownPopMessageMilestones = [1000];
 
-      comp.displayPointMilestoneMessages(90, 120);
+      comp.displayPointMilestoneMessages(900, 1200);
       assert(!comp.displayPopMessage.called);
     });
 
     it('does nothing before reaching a milestone', () => {
-      comp.displayPointMilestoneMessages(50, 90);
+      comp.displayPointMilestoneMessages(500, 900);
       assert.deepEqual(comp.shownPopMessageMilestones, []);
       assert(!comp.displayPopMessage.called);
     });
@@ -1113,6 +1139,362 @@ describe('gameCoordinator', () => {
         'Contactless boost',
         'contactless',
       ));
+    });
+  });
+
+  describe('startOtpSpawnCycle', () => {
+    it('creates an OTP pickup after twenty seconds', () => {
+      comp.removeTimer = sinon.fake();
+      comp.createOtpPickup = sinon.fake();
+
+      comp.startOtpSpawnCycle();
+      assert(comp.removeTimer.called);
+
+      clock.tick(20000);
+      assert(comp.createOtpPickup.called);
+    });
+  });
+
+  describe('createOtpPickup', () => {
+    it('shows the OTP pickup and schedules hide and next spawn', () => {
+      comp.determineOtpSpawnPosition = sinon.fake.returns({
+        column: 5,
+        row: 6,
+      });
+      comp.hideOtpPickup = sinon.fake();
+      comp.startOtpSpawnCycle = sinon.fake();
+      comp.otpPickup.showOtp = sinon.fake();
+
+      comp.createOtpPickup();
+      assert(comp.hideOtpPickup.called);
+      assert(comp.otpPickup.showOtp.calledWith(
+        5,
+        6,
+        comp.scaledTileSize,
+      ));
+      assert(comp.startOtpSpawnCycle.called);
+
+      clock.tick(10000);
+      assert.strictEqual(comp.hideOtpPickup.callCount, 2);
+    });
+  });
+
+  describe('hideOtpPickup', () => {
+    it('removes the hide timer and hides the pickup', () => {
+      comp.removeTimer = sinon.fake();
+      comp.otpPickup.hideOtp = sinon.fake();
+      comp.otpHideTimer = { timerId: 123 };
+
+      comp.hideOtpPickup();
+      assert.strictEqual(comp.otpHideTimer, undefined);
+      assert(comp.removeTimer.calledWith({
+        detail: {
+          timer: { timerId: 123 },
+        },
+      }));
+      assert(comp.otpPickup.hideOtp.called);
+    });
+  });
+
+  describe('determineOtpSpawnPosition', () => {
+    afterEach(() => {
+      if (Math.random.restore) {
+        Math.random.restore();
+      }
+    });
+
+    it('chooses a valid pacdot tile', () => {
+      sinon.stub(Math, 'random').returns(0);
+      comp.mazeArray = mazeArray;
+
+      assert.deepEqual(comp.determineOtpSpawnPosition(), {
+        column: 1,
+        row: 1,
+      });
+    });
+  });
+
+  describe('otpMode', () => {
+    it('hides the pickup and starts the OTP challenge', () => {
+      comp.hideOtpPickup = sinon.fake();
+      comp.startOtpChallenge = sinon.fake();
+
+      comp.otpMode();
+      assert(comp.hideOtpPickup.called);
+      assert(comp.startOtpChallenge.called);
+    });
+  });
+
+  describe('generateOtpCode', () => {
+    afterEach(() => {
+      if (Math.random.restore) {
+        Math.random.restore();
+      }
+    });
+
+    it('generates a four-digit string', () => {
+      sinon.stub(Math, 'random').returns(0.042);
+      assert.strictEqual(comp.generateOtpCode(), '0420');
+    });
+  });
+
+  describe('startOtpChallenge', () => {
+    it('shows the code, then the input, then expires', () => {
+      comp.clearOtpChallenge = sinon.fake();
+      comp.pauseGameplayForOtpChallenge = sinon.fake();
+      comp.generateOtpCode = sinon.fake.returns('1234');
+      comp.displayOtpCode = sinon.fake();
+      comp.displayOtpInput = sinon.fake();
+      comp.completeOtpChallenge = sinon.fake();
+
+      comp.startOtpChallenge();
+      assert(comp.clearOtpChallenge.calledWith(false));
+      assert(comp.pauseGameplayForOtpChallenge.called);
+      assert.strictEqual(comp.otpCode, '1234');
+      assert.strictEqual(comp.otpInput, '');
+      assert(comp.otpActive);
+      assert(!comp.otpAcceptingInput);
+      assert(comp.displayOtpCode.called);
+
+      clock.tick(comp.otpCodeDuration);
+      assert(comp.otpAcceptingInput);
+      assert(comp.displayOtpInput.called);
+
+      clock.tick(comp.otpInputDuration);
+      assert(comp.completeOtpChallenge.calledWith('expired'));
+    });
+  });
+
+  describe('pauseGameplayForOtpChallenge', () => {
+    it('freezes and restores moving entities and timers', () => {
+      const timer = {
+        pause: sinon.fake(),
+        resume: sinon.fake(),
+      };
+      const movingEntity = { moving: true };
+      const stoppedEntity = { moving: false };
+      comp.activeTimers = [timer];
+      comp.entityList = [movingEntity, {}, stoppedEntity];
+      comp.allowKeyPresses = true;
+      comp.allowPacmanMovement = true;
+      comp.allowPause = true;
+
+      comp.pauseGameplayForOtpChallenge();
+      assert(!comp.allowKeyPresses);
+      assert(!comp.allowPacmanMovement);
+      assert(!comp.allowPause);
+      assert(!movingEntity.moving);
+      assert(!stoppedEntity.moving);
+      assert(timer.pause.calledWith(true));
+
+      comp.resumeGameplayAfterOtpChallenge();
+      assert(comp.allowKeyPresses);
+      assert(comp.allowPacmanMovement);
+      assert(comp.allowPause);
+      assert(movingEntity.moving);
+      assert(!stoppedEntity.moving);
+      assert(timer.resume.calledWith(true));
+
+      comp.resumeGameplayAfterOtpChallenge();
+    });
+  });
+
+  describe('clearOtpChallenge', () => {
+    it('removes OTP state and resumes gameplay when requested', () => {
+      comp.removeTimer = sinon.fake();
+      comp.clearOtpOverlay = sinon.fake();
+      comp.resumeGameplayAfterOtpChallenge = sinon.fake();
+      comp.otpRevealTimer = { timerId: 1 };
+      comp.otpTimeoutTimer = { timerId: 2 };
+      comp.otpActive = true;
+      comp.otpAcceptingInput = true;
+      comp.otpCode = '1234';
+      comp.otpInput = '12';
+      comp.otpInputBoxes = [{}, {}];
+
+      comp.clearOtpChallenge(true);
+      assert(comp.removeTimer.calledWith({
+        detail: {
+          timer: { timerId: 1 },
+        },
+      }));
+      assert(comp.removeTimer.calledWith({
+        detail: {
+          timer: { timerId: 2 },
+        },
+      }));
+      assert(comp.clearOtpOverlay.called);
+      assert(comp.resumeGameplayAfterOtpChallenge.called);
+      assert.strictEqual(comp.otpRevealTimer, undefined);
+      assert.strictEqual(comp.otpTimeoutTimer, undefined);
+      assert.strictEqual(comp.otpActive, false);
+      assert.strictEqual(comp.otpAcceptingInput, false);
+      assert.strictEqual(comp.otpCode, '');
+      assert.strictEqual(comp.otpInput, '');
+      assert.deepEqual(comp.otpInputBoxes, []);
+    });
+  });
+
+  describe('OTP overlay', () => {
+    it('displays and clears the code overlay', () => {
+      const overlay = {
+        appendChild: sinon.fake(),
+        classList: { add: sinon.fake() },
+      };
+      const label = {
+        classList: { add: sinon.fake() },
+      };
+      const digits = {
+        appendChild: sinon.fake(),
+        classList: { add: sinon.fake() },
+      };
+      const digitBox = {
+        classList: { add: sinon.fake() },
+      };
+      global.document.createElement = sinon.stub();
+      global.document.createElement.onFirstCall().returns(overlay);
+      global.document.createElement.onSecondCall().returns(label);
+      global.document.createElement.onThirdCall().returns(digits);
+      global.document.createElement.returns(digitBox);
+      comp.mazeDiv = {
+        appendChild: sinon.fake(),
+        removeChild: sinon.fake(),
+      };
+      comp.otpCode = '1234';
+
+      comp.displayOtpCode();
+      assert(overlay.classList.add.calledWith('otp-overlay', 'otp-code-reveal'));
+      assert.strictEqual(label.innerText, 'OTP');
+      assert.strictEqual(digits.appendChild.callCount, 4);
+      assert(comp.mazeDiv.appendChild.calledWith(overlay));
+
+      comp.clearOtpOverlay();
+      assert(comp.mazeDiv.removeChild.calledWith(overlay));
+    });
+
+    it('displays input boxes and updates entered digits', () => {
+      comp.mazeDiv = {
+        appendChild: sinon.fake(),
+        removeChild: sinon.fake(),
+      };
+      comp.otpInput = '12';
+
+      comp.displayOtpInput();
+      assert.strictEqual(comp.otpInputBoxes.length, 4);
+      assert.strictEqual(comp.otpInputBoxes[0].innerText, '1');
+      assert.strictEqual(comp.otpInputBoxes[1].innerText, '2');
+      assert.strictEqual(comp.otpInputBoxes[2].innerText, '');
+      assert(comp.mazeDiv.appendChild.called);
+    });
+  });
+
+  describe('handleOtpKeyDown', () => {
+    beforeEach(() => {
+      comp.otpInputBoxes = [{}, {}, {}, {}];
+      comp.updateOtpInputDisplay = sinon.fake();
+      comp.verifyOtpInput = sinon.fake();
+    });
+
+    it('prevents input while the code is being shown', () => {
+      const preventDefault = sinon.fake();
+      comp.otpAcceptingInput = false;
+
+      comp.handleOtpKeyDown({ key: '1', keyCode: 49, preventDefault });
+      assert(preventDefault.called);
+      assert.strictEqual(comp.otpInput || '', '');
+    });
+
+    it('accepts digits and backspace', () => {
+      comp.otpAcceptingInput = true;
+      comp.otpInput = '';
+
+      comp.handleOtpKeyDown({ key: '1', keyCode: 49 });
+      assert.strictEqual(comp.otpInput, '1');
+      assert(comp.updateOtpInputDisplay.called);
+
+      comp.handleOtpKeyDown({ key: 'Backspace', keyCode: 8 });
+      assert.strictEqual(comp.otpInput, '');
+    });
+
+    it('accepts numpad digits and ignores other keys', () => {
+      comp.otpAcceptingInput = true;
+      comp.otpInput = '';
+
+      comp.handleOtpKeyDown({ keyCode: 97 });
+      assert.strictEqual(comp.otpInput, '1');
+
+      comp.handleOtpKeyDown({ key: 'a', keyCode: 65 });
+      assert.strictEqual(comp.otpInput, '1');
+    });
+
+    it('verifies after four digits', () => {
+      comp.otpAcceptingInput = true;
+      comp.otpInput = '123';
+
+      comp.handleOtpKeyDown({ key: '4', keyCode: 52 });
+      assert(comp.verifyOtpInput.called);
+    });
+  });
+
+  describe('verifyOtpInput', () => {
+    it('approves the matching code', () => {
+      comp.completeOtpChallenge = sinon.fake();
+      comp.otpCode = '1234';
+      comp.otpInput = '1234';
+
+      comp.verifyOtpInput();
+      assert(comp.completeOtpChallenge.calledWith('approved'));
+    });
+
+    it('fails the wrong code', () => {
+      comp.completeOtpChallenge = sinon.fake();
+      comp.otpCode = '1234';
+      comp.otpInput = '9999';
+
+      comp.verifyOtpInput();
+      assert(comp.completeOtpChallenge.calledWith('failed'));
+    });
+  });
+
+  describe('completeOtpChallenge', () => {
+    beforeEach(() => {
+      comp.clearOtpChallenge = sinon.fake();
+      comp.awardPoints = sinon.fake();
+      comp.displayPopMessage = sinon.fake();
+    });
+
+    it('awards points on approved OTP', () => {
+      comp.completeOtpChallenge('approved');
+      assert(comp.clearOtpChallenge.calledWith(true));
+      assert(comp.awardPoints.calledWith({
+        detail: {
+          points: comp.otpBonusPoints,
+          type: 'otp',
+        },
+      }));
+      assert(comp.displayPopMessage.calledWith('OTP approved', 'otp-approved'));
+    });
+
+    it('subtracts points on failed OTP', () => {
+      comp.completeOtpChallenge('failed');
+      assert(comp.awardPoints.calledWith({
+        detail: {
+          points: -comp.otpPenaltyPoints,
+          type: 'otp',
+        },
+      }));
+      assert(comp.displayPopMessage.calledWith('OTP failed', 'otp-failed'));
+    });
+
+    it('subtracts points on expired OTP', () => {
+      comp.completeOtpChallenge('expired');
+      assert(comp.awardPoints.calledWith({
+        detail: {
+          points: -comp.otpPenaltyPoints,
+          type: 'otp',
+        },
+      }));
+      assert(comp.displayPopMessage.calledWith('OTP expired', 'otp-expired'));
     });
   });
 
@@ -1464,6 +1846,13 @@ describe('gameCoordinator', () => {
   describe('displayPopMessage', () => {
     it('creates a temporary pop message and removes it with a set delay', () => {
       const popMessage = {
+        appendChild: sinon.fake(),
+        classList: {
+          add: sinon.fake(),
+        },
+        style: {},
+      };
+      const letterSpan = {
         classList: {
           add: sinon.fake(),
         },
@@ -1473,14 +1862,18 @@ describe('gameCoordinator', () => {
         appendChild: sinon.fake(),
         removeChild: sinon.fake(),
       };
-      global.document.createElement = sinon.fake.returns(popMessage);
+      global.document.createElement = sinon.stub();
+      global.document.createElement.onFirstCall().returns(popMessage);
+      global.document.createElement.returns(letterSpan);
 
       comp.displayPopMessage('Tap streak!', 'streak');
       assert(popMessage.classList.add.calledWith(
         'pop-message',
         'pop-message-streak',
       ));
-      assert.strictEqual(popMessage.innerText, 'Tap streak!');
+      assert.strictEqual(popMessage.appendChild.callCount, 11);
+      assert(letterSpan.classList.add.calledWith('pop-message-letter'));
+      assert.strictEqual(letterSpan.style.animationDelay, '450ms');
       assert.strictEqual(popMessage.style.left, `${comp.scaledTileSize * 14}px`);
       assert.strictEqual(popMessage.style.top, `${comp.scaledTileSize * 9}px`);
       assert(comp.mazeDiv.appendChild.calledWith(popMessage));
@@ -1493,12 +1886,20 @@ describe('gameCoordinator', () => {
 
     it('does not let an old timer remove a newer pop message', () => {
       const firstPopMessage = {
+        appendChild: sinon.fake(),
         classList: {
           add: sinon.fake(),
         },
         style: {},
       };
       const secondPopMessage = {
+        appendChild: sinon.fake(),
+        classList: {
+          add: sinon.fake(),
+        },
+        style: {},
+      };
+      const letterSpan = {
         classList: {
           add: sinon.fake(),
         },
@@ -1510,7 +1911,8 @@ describe('gameCoordinator', () => {
       };
       global.document.createElement = sinon.stub();
       global.document.createElement.onFirstCall().returns(firstPopMessage);
-      global.document.createElement.onSecondCall().returns(secondPopMessage);
+      global.document.createElement.onCall(12).returns(secondPopMessage);
+      global.document.createElement.returns(letterSpan);
 
       comp.displayPopMessage('Tap streak!', 'streak');
       clock.tick(500);

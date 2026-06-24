@@ -27,13 +27,14 @@ class Pickup {
     this.animationTarget.style.visibility = (
       this.type === 'fruit'
       || this.type === 'contactless'
+      || this.type === 'otp'
     )
       ? 'hidden' : 'visible';
   }
 
   /**
    * Sets various style measurements for the pickup depending on its type
-   * @param {('pacdot'|'powerPellet'|'fruit'|'contactless')} type - The classification of pickup
+   * @param {('pacdot'|'powerPellet'|'fruit'|'contactless'|'otp')} type - The classification of pickup
    * @param {number} scaledTileSize
    * @param {number} column
    * @param {number} row
@@ -78,7 +79,7 @@ class Pickup {
 
   /**
    * Determines the Pickup image based on type and point value
-   * @param {('pacdot'|'powerPellet'|'fruit'|'contactless')} type - The classification of pickup
+   * @param {('pacdot'|'powerPellet'|'fruit'|'contactless'|'otp')} type - The classification of pickup
    * @param {Number} points
    * @returns {String}
    */
@@ -143,6 +144,37 @@ class Pickup {
    * Hides the Contactless pickup
    */
   hideContactless() {
+    this.animationTarget.style.visibility = 'hidden';
+  }
+
+  /**
+   * Shows the OTP pickup at a maze coordinate
+   * @param {number} column
+   * @param {number} row
+   * @param {number} scaledTileSize
+   */
+  showOtp(column, row, scaledTileSize) {
+    this.size = scaledTileSize * 2;
+    this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
+    this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
+    this.center = {
+      x: column * scaledTileSize,
+      y: row * scaledTileSize,
+    };
+
+    this.animationTarget.style.backgroundImage = this.determineImage(this.type);
+    this.animationTarget.style.backgroundSize = `${this.size}px`;
+    this.animationTarget.style.height = `${this.size}px`;
+    this.animationTarget.style.width = `${this.size}px`;
+    this.animationTarget.style.top = `${this.y}px`;
+    this.animationTarget.style.left = `${this.x}px`;
+    this.animationTarget.style.visibility = 'visible';
+  }
+
+  /**
+   * Hides the OTP pickup
+   */
+  hideOtp() {
     this.animationTarget.style.visibility = 'hidden';
   }
 
@@ -228,6 +260,11 @@ class Pickup {
 
     if (this.type === 'contactless') {
       window.dispatchEvent(new Event('contactlessMode'));
+      return;
+    }
+
+    if (this.type === 'otp') {
+      window.dispatchEvent(new Event('otpMode'));
       return;
     }
 

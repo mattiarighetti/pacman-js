@@ -47,6 +47,10 @@ describe('pickup', () => {
       pickup.type = 'contactless';
       pickup.reset();
       assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
+
+      pickup.type = 'otp';
+      pickup.reset();
+      assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
     });
   });
 
@@ -128,6 +132,26 @@ describe('pickup', () => {
         visibility: 'hidden',
       });
     });
+
+    it('sets measurements for OTP pickups', () => {
+      pickup.type = 'otp';
+      pickup.setStyleMeasurements('otp', 8, 1, 1);
+
+      assert.strictEqual(pickup.size, 16);
+      assert.strictEqual(pickup.x, 4);
+      assert.strictEqual(pickup.y, 4);
+      assert.deepEqual(pickup.animationTarget.style, {
+        backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/'
+         + 'otp.svg)',
+        backgroundSize: '16px',
+        height: '16px',
+        left: '4px',
+        position: 'absolute',
+        top: '4px',
+        width: '16px',
+        visibility: 'hidden',
+      });
+    });
   });
 
   describe('determineImage', () => {
@@ -193,6 +217,9 @@ describe('pickup', () => {
 
       const contactless = pickup.determineImage('contactless', undefined);
       assert.strictEqual(contactless, `${baseUrl}contactless.svg)`);
+
+      const otp = pickup.determineImage('otp', undefined);
+      assert.strictEqual(otp, `${baseUrl}otp.svg)`);
     });
   });
 
@@ -245,6 +272,36 @@ describe('pickup', () => {
       pickup.animationTarget.style.visibility = 'visible';
 
       pickup.hideContactless();
+      assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
+    });
+  });
+
+  describe('showOtp', () => {
+    it('sets position, image, and visibility', () => {
+      pickup.type = 'otp';
+      pickup.animationTarget.style.visibility = 'hidden';
+
+      pickup.showOtp(5, 6, 8);
+      assert.strictEqual(pickup.size, 16);
+      assert.strictEqual(pickup.x, 36);
+      assert.strictEqual(pickup.y, 44);
+      assert.deepEqual(pickup.center, {
+        x: 40,
+        y: 48,
+      });
+      assert.strictEqual(
+        pickup.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/pickups/otp.svg)',
+      );
+      assert.strictEqual(pickup.animationTarget.style.visibility, 'visible');
+    });
+  });
+
+  describe('hideOtp', () => {
+    it('sets the visibility to HIDDEN', () => {
+      pickup.animationTarget.style.visibility = 'visible';
+
+      pickup.hideOtp();
       assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
     });
   });
@@ -445,6 +502,15 @@ describe('pickup', () => {
 
       pickup.update();
       assert(global.window.dispatchEvent.calledOnceWith(new Event('contactlessMode')));
+    });
+
+    it('emits otpMode if an OTP pickup collides with Pacman', () => {
+      pickup.type = 'otp';
+      pickup.shouldCheckForCollision = sinon.fake.returns(true);
+      pickup.checkForCollision = sinon.fake.returns(true);
+
+      pickup.update();
+      assert(global.window.dispatchEvent.calledOnceWith(new Event('otpMode')));
     });
 
     it('collects visible pacdots inside the Contactless radius', () => {

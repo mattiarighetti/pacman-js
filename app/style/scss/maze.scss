@@ -32,13 +32,21 @@
 
 .pop-message {
   animation: pop-message-rise 2.2s ease-out forwards;
-  background: rgba(0, 0, 0, .72);
-  border: .1em solid rgba(247, 254, 255, .38);
+  background: rgba(0, 0, 0, .78);
+  border: .12em solid rgba(247, 254, 255, .52);
+  box-shadow:
+    0 0 .25em rgba(247, 254, 255, .72),
+    0 0 .55em rgba(255, 223, 0, .45),
+    0 0 1em rgba(37, 215, 255, .36),
+    inset 0 0 .55em rgba(247, 254, 255, .22);
   box-sizing: border-box;
   color: $white;
   font-size: 1em;
+  font-weight: 900;
+  letter-spacing: 0;
   line-height: 1.45;
   max-width: 90%;
+  overflow: hidden;
   padding: .45em .65em;
   pointer-events: none;
   position: absolute;
@@ -48,11 +56,36 @@
     0 .12em $black,
     .12em 0 $black,
     0 -.12em $black,
-    0 0 .45em $blue;
+    0 0 .3em $white,
+    0 0 .65em $blue,
+    0 0 1em rgba(255, 223, 0, .45);
   transform: translateX(-50%);
   user-select: none;
   width: max-content;
   z-index: 4;
+
+  &::before {
+    animation: pop-message-scan 1.1s linear infinite;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, .35),
+      rgba(255, 255, 255, 0)
+    );
+    content: '';
+    height: 100%;
+    left: -65%;
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    width: 45%;
+  }
+}
+
+.pop-message-letter {
+  animation: pop-message-letter-wave .72s cubic-bezier(.16, 1, .3, 1) both;
+  display: inline-block;
+  transform-origin: 50% 100%;
 }
 
 .pop-message-streak {
@@ -75,13 +108,27 @@
   color: #8ef3ff;
 }
 
+.pop-message-otp-approved {
+  color: #7cffcf;
+}
+
+.pop-message-otp-failed,
+.pop-message-otp-expired {
+  color: #ff7a8a;
+}
+
 @keyframes pop-message-rise {
   0% {
     opacity: 0;
     transform: translateX(-50%) translateY(.4em) scale(.9);
   }
 
-  18% {
+  12% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1.12);
+  }
+
+  22% {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
   }
@@ -97,9 +144,134 @@
   }
 }
 
+@keyframes pop-message-scan {
+  100% {
+    left: 120%;
+  }
+}
+
+@keyframes pop-message-letter-wave {
+  0% {
+    filter: brightness(1.8);
+    opacity: 0;
+    transform: translateY(.65em) scale(.8);
+  }
+
+  45% {
+    filter: brightness(1.35);
+    opacity: 1;
+    transform: translateY(-.32em) scale(1.18);
+  }
+
+  100% {
+    filter: brightness(1);
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.otp-overlay {
+  align-items: center;
+  animation: otp-panel-in .25s steps(4, end);
+  background: rgba(0, 0, 0, .88);
+  border: .12em solid rgba(142, 243, 255, .7);
+  box-shadow:
+    0 0 .35em rgba(142, 243, 255, .55),
+    0 0 1em rgba(37, 215, 255, .45),
+    inset 0 0 .5em rgba(247, 254, 255, .2);
+  box-sizing: border-box;
+  color: #f7feff;
+  display: flex;
+  flex-direction: column;
+  gap: .55em;
+  left: 50%;
+  padding: .65em .85em;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  text-shadow:
+    -.12em 0 $black,
+    0 .12em $black,
+    .12em 0 $black,
+    0 -.12em $black,
+    0 0 .55em #25d7ff;
+  top: 36%;
+  transform: translateX(-50%);
+  user-select: none;
+  z-index: 5;
+}
+
+.otp-label {
+  color: #ffdf00;
+  font-size: .7em;
+  line-height: 1.2;
+}
+
+.otp-digit-row {
+  display: flex;
+  gap: .35em;
+}
+
+.otp-digit-box {
+  align-items: center;
+  background: #05051d;
+  border: .1em solid #8ef3ff;
+  box-shadow:
+    0 0 .25em rgba(142, 243, 255, .55),
+    inset 0 0 .25em rgba(247, 254, 255, .18);
+  box-sizing: border-box;
+  color: #f7feff;
+  display: flex;
+  height: 1.8em;
+  justify-content: center;
+  min-width: 1.45em;
+}
+
+.otp-digit-reveal {
+  animation: otp-digit-flash .45s steps(2, end) infinite;
+  color: #ffdf00;
+}
+
+.otp-input-box {
+  color: #8ef3ff;
+}
+
+@keyframes otp-panel-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(.86);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+@keyframes otp-digit-flash {
+  50% {
+    color: #f7feff;
+    text-shadow: 0 0 .6em #ffdf00;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pop-message {
     animation: pop-message-fade 2.2s linear forwards;
+
+    &::before {
+      animation: none;
+      display: none;
+    }
+  }
+
+  .pop-message-letter {
+    animation: none;
+  }
+
+  .otp-overlay,
+  .otp-digit-reveal {
+    animation: none;
   }
 
   @keyframes pop-message-fade {

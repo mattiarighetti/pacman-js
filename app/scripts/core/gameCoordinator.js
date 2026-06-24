@@ -90,11 +90,16 @@ class GameCoordinator {
     };
 
     this.popMessageMilestones = [
-      { points: 100, message: 'Tap streak!', variant: 'streak' },
-      { points: 500, message: 'Cashback ioSi!', variant: 'cashback' },
-      { points: 1000, message: 'Authorization approved', variant: 'approved' },
-      { points: 2500, message: 'ioSi level up', variant: 'level-up' },
+      { points: 1000, message: 'Tap streak!', variant: 'streak' },
+      { points: 2500, message: 'Cashback ioSi!', variant: 'cashback' },
+      { points: 5000, message: 'Authorization approved', variant: 'approved' },
+      { points: 10000, message: 'ioSi level up', variant: 'level-up' },
     ];
+
+    this.otpBonusPoints = 500;
+    this.otpPenaltyPoints = 250;
+    this.otpCodeDuration = 1800;
+    this.otpInputDuration = 5000;
 
     this.mazeArray.forEach((row, rowIndex) => {
       this.mazeArray[rowIndex] = row[0].split('');
@@ -264,6 +269,7 @@ class GameCoordinator {
         `${imgBase}pickups/pacdot.svg`,
         `${imgBase}pickups/powerPellet.svg`,
         `${imgBase}pickups/contactless.svg`,
+        `${imgBase}pickups/otp.svg`,
 
         // Fruit
         `${imgBase}pickups/apple.svg`,
@@ -410,6 +416,14 @@ class GameCoordinator {
       this.hideContactlessPickup();
     }
 
+    this.removeTimer({ detail: { timer: this.otpSpawnTimer } });
+    this.otpSpawnTimer = undefined;
+
+    if (this.otpPickup) {
+      this.hideOtpPickup();
+    }
+
+    this.clearOtpChallenge(false);
     this.clearPopMessage();
 
     this.activeTimers = [];
@@ -486,6 +500,15 @@ class GameCoordinator {
         this.mazeDiv,
         0,
       );
+      this.otpPickup = new Pickup(
+        'otp',
+        this.scaledTileSize,
+        13.5,
+        17,
+        this.pacman,
+        this.mazeDiv,
+        0,
+      );
     }
 
     this.entityList = [
@@ -496,6 +519,7 @@ class GameCoordinator {
       this.clyde,
       this.fruit,
       this.contactlessPickup,
+      this.otpPickup,
     ];
 
     this.ghosts = [this.blinky, this.pinky, this.inky, this.clyde];
@@ -513,7 +537,7 @@ class GameCoordinator {
         ghost.reset(true);
       });
       this.pickups.forEach((pickup) => {
-        if (!['contactless', 'fruit'].includes(pickup.type)) {
+        if (!['contactless', 'fruit', 'otp'].includes(pickup.type)) {
           this.remainingDots += 1;
           pickup.reset();
           this.entityList.push(pickup);
@@ -550,7 +574,7 @@ class GameCoordinator {
    * @param {Array} entityList - List of entities to be used throughout the game
    */
   drawMaze(mazeArray, entityList) {
-    this.pickups = [this.fruit, this.contactlessPickup];
+    this.pickups = [this.fruit, this.contactlessPickup, this.otpPickup];
 
     this.mazeDiv.style.height = `${this.scaledTileSize * 31}px`;
     this.mazeDiv.style.width = `${this.scaledTileSize * 28}px`;
@@ -648,6 +672,7 @@ class GameCoordinator {
       this.idleGhosts = [this.pinky, this.inky, this.clyde];
       this.releaseGhost();
       this.startContactlessSpawnCycle();
+      this.startOtpSpawnCycle();
     }, duration);
   }
 
@@ -737,6 +762,7 @@ class GameCoordinator {
     window.addEventListener('dotEaten', this.dotEaten.bind(this));
     window.addEventListener('powerUp', this.powerUp.bind(this));
     window.addEventListener('contactlessMode', this.contactlessMode.bind(this));
+    window.addEventListener('otpMode', this.otpMode.bind(this));
     window.addEventListener('eatGhost', this.eatGhost.bind(this));
     window.addEventListener('restoreGhost', this.restoreGhost.bind(this));
     window.addEventListener('addTimer', this.addTimer.bind(this));
@@ -800,7 +826,9 @@ class GameCoordinator {
    * @param {Event} e - The keydown event to evaluate
    */
   handleKeyDown(e) {
-    if (e.keyCode === 27) {
+    if (this.otpActive) {
+      this.handleOtpKeyDown(e);
+    } else if (e.keyCode === 27) {
       // ESC key
       this.handlePauseKey();
     } else if (e.keyCode === 81) {
@@ -863,7 +891,7 @@ class GameCoordinator {
    */
   awardPoints(e) {
     const previousPoints = this.points;
-    this.points += e.detail.points;
+    this.points = Math.max(0, this.points + e.detail.points);
     this.pointsDisplay.innerText = this.points;
     this.displayPointMilestoneMessages(previousPoints, this.points);
 
@@ -913,8 +941,12 @@ class GameCoordinator {
     this.removeTimer({ detail: { timer: this.ghostFlashTimer } });
     this.removeTimer({ detail: { timer: this.contactlessSpawnTimer } });
     this.contactlessSpawnTimer = undefined;
+    this.removeTimer({ detail: { timer: this.otpSpawnTimer } });
+    this.otpSpawnTimer = undefined;
     this.hideContactlessPickup();
+    this.hideOtpPickup();
     this.deactivateContactlessMode();
+    this.clearOtpChallenge(false);
     this.clearPopMessage();
 
     this.allowKeyPresses = false;
@@ -946,6 +978,7 @@ class GameCoordinator {
             });
             this.fruit.hideFruit();
             this.contactlessPickup.hideContactless();
+            this.otpPickup.hideOtp();
 
             this.startGameplay();
           }, 500);
@@ -1071,8 +1104,12 @@ class GameCoordinator {
     this.removeTimer({ detail: { timer: this.ghostFlashTimer } });
     this.removeTimer({ detail: { timer: this.contactlessSpawnTimer } });
     this.contactlessSpawnTimer = undefined;
+    this.removeTimer({ detail: { timer: this.otpSpawnTimer } });
+    this.otpSpawnTimer = undefined;
     this.hideContactlessPickup();
+    this.hideOtpPickup();
     this.deactivateContactlessMode();
+    this.clearOtpChallenge(false);
     this.clearPopMessage();
 
     const imgBase = 'app/style//graphics/spriteSheets/maze/';
@@ -1111,7 +1148,7 @@ class GameCoordinator {
                       }
                       if (
                         entityRef instanceof Pickup
-                        && !['contactless', 'fruit'].includes(entityRef.type)
+                        && !['contactless', 'fruit', 'otp'].includes(entityRef.type)
                       ) {
                         this.remainingDots += 1;
                       }
@@ -1219,6 +1256,60 @@ class GameCoordinator {
    * @returns {({ column: number, row: number })}
    */
   determineContactlessSpawnPosition() {
+    return this.determinePickupSpawnPosition(
+      'No contactless spawn positions available.',
+    );
+  }
+
+  /**
+   * Starts the OTP pickup spawn timer
+   */
+  startOtpSpawnCycle() {
+    this.removeTimer({ detail: { timer: this.otpSpawnTimer } });
+    this.otpSpawnTimer = new Timer(() => {
+      this.createOtpPickup();
+    }, 20000);
+  }
+
+  /**
+   * Shows the temporary OTP pickup and schedules its next spawn
+   */
+  createOtpPickup() {
+    const { column, row } = this.determineOtpSpawnPosition();
+
+    this.hideOtpPickup();
+    this.otpPickup.showOtp(column, row, this.scaledTileSize);
+    this.otpHideTimer = new Timer(() => {
+      this.hideOtpPickup();
+    }, 10000);
+    this.startOtpSpawnCycle();
+  }
+
+  /**
+   * Hides the temporary OTP pickup
+   */
+  hideOtpPickup() {
+    this.removeTimer({ detail: { timer: this.otpHideTimer } });
+    this.otpHideTimer = undefined;
+    this.otpPickup.hideOtp();
+  }
+
+  /**
+   * Chooses a valid dot tile for the OTP pickup spawn
+   * @returns {({ column: number, row: number })}
+   */
+  determineOtpSpawnPosition() {
+    return this.determinePickupSpawnPosition(
+      'No OTP spawn positions available.',
+    );
+  }
+
+  /**
+   * Chooses a random valid dot tile for a temporary pickup spawn
+   * @param {String} errorMessage
+   * @returns {({ column: number, row: number })}
+   */
+  determinePickupSpawnPosition(errorMessage) {
     const positions = [];
 
     this.mazeArray.forEach((row, rowIndex) => {
@@ -1233,10 +1324,270 @@ class GameCoordinator {
     });
 
     if (positions.length === 0) {
-      throw new Error('No contactless spawn positions available.');
+      throw new Error(errorMessage);
     }
 
     return positions[Math.floor(Math.random() * positions.length)];
+  }
+
+  /**
+   * Starts the OTP challenge after the temporary pickup is collected
+   */
+  otpMode() {
+    this.hideOtpPickup();
+    this.startOtpChallenge();
+  }
+
+  /**
+   * Generates a four-digit OTP code
+   * @returns {String}
+   */
+  generateOtpCode() {
+    return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  }
+
+  /**
+   * Starts the OTP memorization and input sequence
+   */
+  startOtpChallenge() {
+    this.clearOtpChallenge(false);
+    this.pauseGameplayForOtpChallenge();
+
+    this.otpCode = this.generateOtpCode();
+    this.otpInput = '';
+    this.otpActive = true;
+    this.otpAcceptingInput = false;
+    this.displayOtpCode();
+
+    this.otpRevealTimer = new Timer(() => {
+      this.otpAcceptingInput = true;
+      this.displayOtpInput();
+      this.otpTimeoutTimer = new Timer(() => {
+        this.completeOtpChallenge('expired');
+      }, this.otpInputDuration);
+    }, this.otpCodeDuration);
+  }
+
+  /**
+   * Freezes gameplay while the OTP challenge is active
+   */
+  pauseGameplayForOtpChallenge() {
+    this.otpPausedState = {
+      allowKeyPresses: this.allowKeyPresses,
+      allowPacmanMovement: this.allowPacmanMovement,
+      allowPause: this.allowPause,
+      movingEntities: this.entityList
+        .filter((entity) => typeof entity.moving !== 'undefined')
+        .map((entity) => ({
+          entity,
+          moving: entity.moving,
+        })),
+      timers: [...this.activeTimers],
+    };
+
+    this.allowKeyPresses = false;
+    this.allowPacmanMovement = false;
+    this.allowPause = false;
+    this.otpPausedState.movingEntities.forEach(({ entity }) => {
+      const entityRef = entity;
+      entityRef.moving = false;
+    });
+    this.otpPausedState.timers.forEach((timer) => {
+      timer.pause(true);
+    });
+  }
+
+  /**
+   * Restores gameplay after the OTP challenge closes
+   */
+  resumeGameplayAfterOtpChallenge() {
+    if (!this.otpPausedState) {
+      return;
+    }
+
+    this.allowKeyPresses = this.otpPausedState.allowKeyPresses;
+    this.allowPacmanMovement = this.otpPausedState.allowPacmanMovement;
+    this.allowPause = this.otpPausedState.allowPause;
+    this.otpPausedState.movingEntities.forEach(({ entity, moving }) => {
+      const entityRef = entity;
+      entityRef.moving = moving;
+    });
+    this.otpPausedState.timers.forEach((timer) => {
+      timer.resume(true);
+    });
+    this.otpPausedState = undefined;
+  }
+
+  /**
+   * Clears OTP challenge timers and overlay
+   * @param {Boolean} resumeGameplay
+   */
+  clearOtpChallenge(resumeGameplay) {
+    this.removeTimer({ detail: { timer: this.otpRevealTimer } });
+    this.removeTimer({ detail: { timer: this.otpTimeoutTimer } });
+    this.otpRevealTimer = undefined;
+    this.otpTimeoutTimer = undefined;
+    this.clearOtpOverlay();
+
+    if (resumeGameplay) {
+      this.resumeGameplayAfterOtpChallenge();
+    } else {
+      this.otpPausedState = undefined;
+    }
+
+    this.otpActive = false;
+    this.otpAcceptingInput = false;
+    this.otpCode = '';
+    this.otpInput = '';
+    this.otpInputBoxes = [];
+  }
+
+  /**
+   * Removes the active OTP overlay
+   */
+  clearOtpOverlay() {
+    if (this.otpOverlay) {
+      this.mazeDiv.removeChild(this.otpOverlay);
+      this.otpOverlay = undefined;
+    }
+  }
+
+  /**
+   * Displays the OTP code before input starts
+   */
+  displayOtpCode() {
+    const otpOverlay = document.createElement('div');
+    const label = document.createElement('div');
+    const digits = document.createElement('div');
+
+    this.clearOtpOverlay();
+    otpOverlay.classList.add('otp-overlay', 'otp-code-reveal');
+    label.classList.add('otp-label');
+    label.innerText = 'OTP';
+    digits.classList.add('otp-digit-row');
+
+    this.otpCode.split('').forEach((digit) => {
+      const digitBox = document.createElement('div');
+      digitBox.classList.add('otp-digit-box', 'otp-digit-reveal');
+      digitBox.innerText = digit;
+      digits.appendChild(digitBox);
+    });
+
+    otpOverlay.appendChild(label);
+    otpOverlay.appendChild(digits);
+    this.mazeDiv.appendChild(otpOverlay);
+    this.otpOverlay = otpOverlay;
+  }
+
+  /**
+   * Displays the OTP input boxes
+   */
+  displayOtpInput() {
+    const otpOverlay = document.createElement('div');
+    const label = document.createElement('div');
+    const boxes = document.createElement('div');
+
+    this.clearOtpOverlay();
+    otpOverlay.classList.add('otp-overlay', 'otp-input-panel');
+    label.classList.add('otp-label');
+    label.innerText = 'INSERT OTP';
+    boxes.classList.add('otp-digit-row');
+    this.otpInputBoxes = [];
+
+    for (let i = 0; i < 4; i += 1) {
+      const inputBox = document.createElement('div');
+      inputBox.classList.add('otp-digit-box', 'otp-input-box');
+      boxes.appendChild(inputBox);
+      this.otpInputBoxes.push(inputBox);
+    }
+
+    otpOverlay.appendChild(label);
+    otpOverlay.appendChild(boxes);
+    this.mazeDiv.appendChild(otpOverlay);
+    this.otpOverlay = otpOverlay;
+    this.updateOtpInputDisplay();
+  }
+
+  /**
+   * Updates the visible OTP input boxes from the current input
+   */
+  updateOtpInputDisplay() {
+    this.otpInputBoxes.forEach((inputBox, index) => {
+      const inputBoxRef = inputBox;
+      inputBoxRef.innerText = this.otpInput[index] || '';
+    });
+  }
+
+  /**
+   * Handles keyboard input while the OTP challenge is active
+   * @param {Event} e
+   */
+  handleOtpKeyDown(e) {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+
+    if (!this.otpAcceptingInput) {
+      return;
+    }
+
+    const { keyCode } = e;
+    const rawKey = e.key || String.fromCharCode(keyCode);
+    const digitKeyCode = keyCode >= 48 && keyCode <= 57;
+    const digitNumpadCode = keyCode >= 96 && keyCode <= 105;
+    const digit = /^[0-9]$/.test(rawKey)
+      ? rawKey
+      : String(keyCode - (digitNumpadCode ? 96 : 48));
+
+    if (keyCode === 8 || rawKey === 'Backspace') {
+      this.otpInput = this.otpInput.slice(0, -1);
+      this.updateOtpInputDisplay();
+    } else if (
+      this.otpInput.length < 4
+      && (digitKeyCode || digitNumpadCode || /^[0-9]$/.test(rawKey))
+    ) {
+      this.otpInput += digit;
+      this.updateOtpInputDisplay();
+    }
+
+    if (this.otpInput.length === 4) {
+      this.verifyOtpInput();
+    }
+  }
+
+  /**
+   * Verifies the entered OTP code
+   */
+  verifyOtpInput() {
+    const result = this.otpInput === this.otpCode ? 'approved' : 'failed';
+    this.completeOtpChallenge(result);
+  }
+
+  /**
+   * Finishes the OTP challenge and reports the result
+   * @param {('approved'|'failed'|'expired')} result
+   */
+  completeOtpChallenge(result) {
+    const messages = {
+      approved: 'OTP approved',
+      failed: 'OTP failed',
+      expired: 'OTP expired',
+    };
+
+    this.clearOtpChallenge(true);
+
+    const points = result === 'approved'
+      ? this.otpBonusPoints
+      : -this.otpPenaltyPoints;
+
+    this.awardPoints({
+      detail: {
+        points,
+        type: 'otp',
+      },
+    });
+
+    this.displayPopMessage(messages[result], `otp-${result}`);
   }
 
   /**
@@ -1402,7 +1753,13 @@ class GameCoordinator {
     this.clearPopMessage();
 
     popMessage.classList.add('pop-message', `pop-message-${variant}`);
-    popMessage.innerText = message;
+    Array.from(message).forEach((letter, index) => {
+      const letterSpan = document.createElement('span');
+      letterSpan.classList.add('pop-message-letter');
+      letterSpan.innerText = letter === ' ' ? '\u00a0' : letter;
+      letterSpan.style.animationDelay = `${index * 45}ms`;
+      popMessage.appendChild(letterSpan);
+    });
     popMessage.style.left = `${this.scaledTileSize * 14}px`;
     popMessage.style.top = `${this.scaledTileSize * 9}px`;
 
