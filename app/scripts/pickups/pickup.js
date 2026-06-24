@@ -51,8 +51,10 @@ class Pickup {
       this.y = (row * scaledTileSize);
     } else {
       this.size = scaledTileSize * 2;
+      this.width = this.size;
+      this.height = scaledTileSize * (4 / 3);
       this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
-      this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
+      this.y = (row * scaledTileSize) - (scaledTileSize * (1 / 6));
     }
 
     this.center = {
@@ -62,10 +64,11 @@ class Pickup {
 
     this.animationTarget = document.createElement('div');
     this.animationTarget.style.position = 'absolute';
-    this.animationTarget.style.backgroundSize = `${this.size}px`;
+    this.animationTarget.style.backgroundRepeat = 'no-repeat';
+    this.animationTarget.style.backgroundSize = `${this.width || this.size}px ${this.height || this.size}px`;
     this.animationTarget.style.backgroundImage = this.determineImage(type, points);
-    this.animationTarget.style.height = `${this.size}px`;
-    this.animationTarget.style.width = `${this.size}px`;
+    this.animationTarget.style.height = `${this.height || this.size}px`;
+    this.animationTarget.style.width = `${this.width || this.size}px`;
     this.animationTarget.style.top = `${this.y}px`;
     this.animationTarget.style.left = `${this.x}px`;
     this.mazeDiv.appendChild(this.animationTarget);
@@ -126,17 +129,19 @@ class Pickup {
    */
   showContactless(column, row, scaledTileSize) {
     this.size = scaledTileSize * 2;
+    this.width = this.size;
+    this.height = scaledTileSize * (4 / 3);
     this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
-    this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
+    this.y = (row * scaledTileSize) - (scaledTileSize * (1 / 6));
     this.center = {
       x: column * scaledTileSize,
       y: row * scaledTileSize,
     };
 
     this.animationTarget.style.backgroundImage = this.determineImage(this.type);
-    this.animationTarget.style.backgroundSize = `${this.size}px`;
-    this.animationTarget.style.height = `${this.size}px`;
-    this.animationTarget.style.width = `${this.size}px`;
+    this.animationTarget.style.backgroundSize = `${this.width}px ${this.height}px`;
+    this.animationTarget.style.height = `${this.height}px`;
+    this.animationTarget.style.width = `${this.width}px`;
     this.animationTarget.style.top = `${this.y}px`;
     this.animationTarget.style.left = `${this.x}px`;
     this.animationTarget.style.visibility = 'visible';
@@ -157,17 +162,19 @@ class Pickup {
    */
   showOtp(column, row, scaledTileSize) {
     this.size = scaledTileSize * 2;
+    this.width = this.size;
+    this.height = scaledTileSize * (4 / 3);
     this.x = (column * scaledTileSize) - (scaledTileSize * 0.5);
-    this.y = (row * scaledTileSize) - (scaledTileSize * 0.5);
+    this.y = (row * scaledTileSize) - (scaledTileSize * (1 / 6));
     this.center = {
       x: column * scaledTileSize,
       y: row * scaledTileSize,
     };
 
     this.animationTarget.style.backgroundImage = this.determineImage(this.type);
-    this.animationTarget.style.backgroundSize = `${this.size}px`;
-    this.animationTarget.style.height = `${this.size}px`;
-    this.animationTarget.style.width = `${this.size}px`;
+    this.animationTarget.style.backgroundSize = `${this.width}px ${this.height}px`;
+    this.animationTarget.style.height = `${this.height}px`;
+    this.animationTarget.style.width = `${this.width}px`;
     this.animationTarget.style.top = `${this.y}px`;
     this.animationTarget.style.left = `${this.x}px`;
     this.animationTarget.style.visibility = 'visible';

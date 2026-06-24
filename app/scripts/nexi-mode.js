@@ -43,6 +43,16 @@
     });
   }
 
+  function scheduleFitBurst(gameCoordinator) {
+    const delays = [0, 80, 250, 600];
+
+    delays.forEach((delay) => {
+      window.setTimeout(() => {
+        scheduleFit(gameCoordinator);
+      }, delay);
+    });
+  }
+
   Pickup.prototype.determineImage = function determineNexiImage(type, points) {
     let image;
 
@@ -84,6 +94,17 @@
       row,
       points,
     );
+
+    if (type === 'powerPellet') {
+      this.size = scaledTileSize * 0.9;
+      this.x = (column * scaledTileSize) + (scaledTileSize * 0.05);
+      this.y = (row * scaledTileSize) + (scaledTileSize * 0.05);
+      this.animationTarget.style.backgroundSize = `${this.size}px`;
+      this.animationTarget.style.height = `${this.size}px`;
+      this.animationTarget.style.width = `${this.size}px`;
+      this.animationTarget.style.top = `${this.y}px`;
+      this.animationTarget.style.left = `${this.x}px`;
+    }
   };
 
   function determineBannerVariant(message) {
@@ -264,6 +285,18 @@
           }
         }
 
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(() => {
+            scheduleFitBurst(this);
+          });
+        }
+
+        window.addEventListener('load', () => {
+          scheduleFitBurst(this);
+        });
+
+        scheduleFitBurst(this);
+
         window.setTimeout(() => {
           this.startAttractMode();
         }, 1700);
@@ -275,7 +308,7 @@
 
   GameCoordinator.prototype.reset = function patchedReset() {
     originalReset.call(this);
-    scheduleFit(this);
+    scheduleFitBurst(this);
 
     if (this.demoMode) {
       this.ghosts.forEach((ghost) => {
@@ -335,6 +368,6 @@
 
   GameCoordinator.prototype.setUiDimensions = function patchedSetUiDimensions() {
     originalSetUiDimensions.call(this);
-    scheduleFit(this);
+    scheduleFitBurst(this);
   };
 }());
