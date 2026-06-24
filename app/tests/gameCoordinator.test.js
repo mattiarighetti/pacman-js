@@ -36,6 +36,10 @@ describe('gameCoordinator', () => {
     };
     global.CharacterUtil = class {};
     global.Ghost = class {
+      constructor(scaledTileSize, mazeArrayParam, pacman, name) {
+        this.name = name;
+      }
+
       reset() {}
 
       changeMode() {}
@@ -112,6 +116,13 @@ describe('gameCoordinator', () => {
       innerWidth: 1000,
       addEventListener: () => {},
       dispatchEvent: () => {},
+    };
+
+    global.CustomEvent = class {
+      constructor(type, init) {
+        this.type = type;
+        this.detail = init.detail;
+      }
     };
 
     global.localStorage = {
@@ -781,6 +792,12 @@ describe('gameCoordinator', () => {
         assert(imgSources.includes(
           'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_right.svg',
         ));
+        assert(imgSources.includes(
+          'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_red.svg',
+        ));
+        assert(imgSources.includes(
+          'app/style/graphics/spriteSheets/characters/ghosts/cash/cash_card.svg',
+        ));
       });
     });
   });
@@ -1409,6 +1426,12 @@ describe('gameCoordinator', () => {
     beforeEach(() => {
       comp.updateFruitDisplay = sinon.fake();
       comp.fruit.determineImage = sinon.fake();
+      comp.ghosts = [
+        {
+          setPaymentCardVisualState: sinon.fake(),
+          clearPaymentCardVisualState: sinon.fake(),
+        },
+      ];
     });
 
     it('adds to the total number of points', () => {
@@ -1493,6 +1516,57 @@ describe('gameCoordinator', () => {
       assert(comp.soundManager.play.calledWith('extra_life'));
       assert.strictEqual(comp.lives, 1);
       assert(comp.updateExtraLivesDisplay.called);
+    });
+
+    it('turns ghost cash into payment cards for five seconds after positive points', () => {
+      comp.points = 0;
+
+      comp.awardPoints({ detail: { points: 50 } });
+      assert(comp.ghosts[0].setPaymentCardVisualState.calledOnce);
+      assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
+
+      clock.tick(5000);
+      assert(comp.ghosts[0].clearPaymentCardVisualState.calledOnce);
+    });
+
+    it('restarts the payment card timer when more points are collected', () => {
+      comp.points = 0;
+      global.window.clearTimeout = clearTimeout;
+      global.Timer = class {
+        constructor(callback, delay) {
+          this.timerId = setTimeout(callback, delay);
+        }
+      };
+
+      comp.awardPoints({ detail: { points: 50 } });
+      clock.tick(4000);
+      comp.awardPoints({ detail: { points: 10 } });
+      clock.tick(1000);
+      assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
+
+      clock.tick(4000);
+      assert(comp.ghosts[0].clearPaymentCardVisualState.calledOnce);
+    });
+
+    it('does not turn ghost cash into payment cards for negative points', () => {
+      comp.points = 100;
+      comp.highScore = 500;
+
+      comp.awardPoints({ detail: { points: -50, type: 'otp' } });
+      clock.tick(5000);
+
+      assert(!comp.ghosts[0].setPaymentCardVisualState.called);
+      assert(!comp.ghosts[0].clearPaymentCardVisualState.called);
+    });
+
+    it('skips payment card hooks when a ghost does not expose them', () => {
+      comp.points = 0;
+      comp.ghosts = [{}];
+
+      comp.awardPoints({ detail: { points: 50 } });
+      clock.tick(5000);
+
+      assert.strictEqual(comp.points, 50);
     });
   });
 
@@ -2405,6 +2479,7 @@ describe('gameCoordinator', () => {
         display: true,
         name: 'blinky',
         pause: sinon.fake(),
+        clearCaughtVisualState: sinon.fake(),
       };
       const e = {
         detail: {
@@ -2418,7 +2493,7 @@ describe('gameCoordinator', () => {
 
       comp.eatGhost(e);
       assert(!comp.allowPacmanMovement);
-      assert(!e.detail.ghost.display);
+      assert(e.detail.ghost.display);
       assert(!comp.pacman.moving);
       assert(!comp.blinky.moving);
       assert(
@@ -2434,6 +2509,32 @@ describe('gameCoordinator', () => {
       assert(comp.determineComboPoints.called);
 
       clock.tick(1000);
+      assert(comp.allowPacmanMovement);
+      assert(e.detail.ghost.display);
+      assert(e.detail.ghost.clearCaughtVisualState.called);
+      assert(comp.pacman.moving);
+    });
+
+    it('resumes an eaten ghost without an optional caught visual reset hook', () => {
+      comp.allowPacmanMovement = true;
+      comp.displayText = sinon.fake();
+      const ghost = {
+        display: true,
+        name: 'blinky',
+        pause: sinon.fake(),
+      };
+      const e = {
+        detail: {
+          ghost,
+        },
+      };
+      comp.scaredGhosts = [ghost];
+      global.window.dispatchEvent = sinon.fake();
+      global.CustomEvent = class {};
+
+      comp.eatGhost(e);
+      clock.tick(1000);
+
       assert(comp.allowPacmanMovement);
       assert(e.detail.ghost.display);
       assert(comp.pacman.moving);

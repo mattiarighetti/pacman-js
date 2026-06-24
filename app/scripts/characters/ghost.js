@@ -37,6 +37,7 @@ class Ghost {
     this.allowCollision = true;
     this.defaultMode = 'scatter';
     this.mode = 'scatter';
+    delete this.visualState;
     if (this.name !== 'blinky') {
       this.idleMode = 'idle';
     }
@@ -166,12 +167,15 @@ class Ghost {
    * @param {('chase'|'scatter'|'scared'|'eyes')} mode - The character's behavior mode
    */
   setSpriteSheet(name, direction, mode) {
-    if (mode === 'scared') {
+    if (this.visualState === 'caught') {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
-        + `spriteSheets/characters/ghosts/scared_${this.scaredColor}.svg)`;
+        + 'spriteSheets/characters/ghosts/cash/cash_red.svg)';
     } else if (mode === 'eyes') {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
         + `spriteSheets/characters/ghosts/eyes_${direction}.svg)`;
+    } else if (this.visualState === 'paymentCard') {
+      this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
+        + 'spriteSheets/characters/ghosts/cash/cash_card.svg)';
     } else {
       this.animationTarget.style.backgroundImage = 'url(app/style/graphics/'
         + `spriteSheets/characters/ghosts/cash/cash_${direction}.svg)`;
@@ -670,6 +674,40 @@ class Ghost {
   }
 
   /**
+   * Shows the red cash sprite while Pacman collects the caught ghost points.
+   */
+  setCaughtVisualState() {
+    this.visualState = 'caught';
+    this.setSpriteSheet(this.name, this.direction, this.mode);
+  }
+
+  /**
+   * Clears the temporary caught visual state and restores the current mode sprite.
+   */
+  clearCaughtVisualState() {
+    delete this.visualState;
+    this.setSpriteSheet(this.name, this.direction, this.mode);
+  }
+
+  /**
+   * Shows the payment card sprite after points are collected.
+   */
+  setPaymentCardVisualState() {
+    this.visualState = 'paymentCard';
+    this.setSpriteSheet(this.name, this.direction, this.mode);
+  }
+
+  /**
+   * Clears the temporary payment card visual state.
+   */
+  clearPaymentCardVisualState() {
+    if (this.visualState === 'paymentCard') {
+      delete this.visualState;
+      this.setSpriteSheet(this.name, this.direction, this.mode);
+    }
+  }
+
+  /**
    * Returns the scared ghost to chase/scatter mode and sets its spritesheet
    */
   endScared() {
@@ -717,6 +755,7 @@ class Ghost {
       && this.mode !== 'eyes'
       && this.allowCollision) {
       if (this.mode === 'scared') {
+        this.setCaughtVisualState();
         window.dispatchEvent(new CustomEvent('eatGhost', {
           detail: {
             ghost: this,

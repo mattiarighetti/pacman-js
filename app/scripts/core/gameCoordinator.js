@@ -483,8 +483,10 @@ class GameCoordinator {
         `${imgBase}characters/pacman/mini_pos_up.svg`,
 
         // Cash enemies
+        `${imgBase}characters/ghosts/cash/cash_card.svg`,
         `${imgBase}characters/ghosts/cash/cash_down.svg`,
         `${imgBase}characters/ghosts/cash/cash_left.svg`,
+        `${imgBase}characters/ghosts/cash/cash_red.svg`,
         `${imgBase}characters/ghosts/cash/cash_right.svg`,
         `${imgBase}characters/ghosts/cash/cash_up.svg`,
 
@@ -1163,6 +1165,10 @@ class GameCoordinator {
     this.pointsDisplay.innerText = this.points;
     this.displayPointMilestoneMessages(previousPoints, this.points);
 
+    if (e.detail.points > 0) {
+      this.activatePaymentCardVisualState();
+    }
+
     if (this.points > (this.highScore || 0)) {
       this.highScore = this.points;
       this.highScoreDisplay.innerText = this.points;
@@ -1192,6 +1198,28 @@ class GameCoordinator {
         this.fruit.determineImage('fruit', e.detail.points),
       );
     }
+  }
+
+  /**
+   * Shows payment card sprites on cash enemies after points are collected.
+   */
+  activatePaymentCardVisualState() {
+    this.removeTimer({ detail: { timer: this.paymentCardVisualTimer } });
+
+    this.ghosts.forEach((ghost) => {
+      if (ghost.setPaymentCardVisualState) {
+        ghost.setPaymentCardVisualState();
+      }
+    });
+
+    this.paymentCardVisualTimer = new Timer(() => {
+      this.ghosts.forEach((ghost) => {
+        if (ghost.clearPaymentCardVisualState) {
+          ghost.clearPaymentCardVisualState();
+        }
+      });
+      this.paymentCardVisualTimer = undefined;
+    }, 5000);
   }
 
   /**
@@ -1971,7 +1999,6 @@ class GameCoordinator {
     this.allowPacmanMovement = false;
     this.pacman.display = false;
     this.pacman.moving = false;
-    e.detail.ghost.display = false;
     e.detail.ghost.moving = false;
 
     this.ghosts.forEach((ghost) => {
@@ -1990,6 +2017,9 @@ class GameCoordinator {
       this.allowPacmanMovement = true;
       this.pacman.display = true;
       this.pacman.moving = true;
+      if (e.detail.ghost.clearCaughtVisualState) {
+        e.detail.ghost.clearCaughtVisualState();
+      }
       e.detail.ghost.display = true;
       e.detail.ghost.moving = true;
       this.ghosts.forEach((ghost) => {

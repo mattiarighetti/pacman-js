@@ -152,22 +152,59 @@ describe('ghost', () => {
   });
 
   describe('setSpriteSheet', () => {
-    it('sets the correct spritesheet if the ghost is scared', () => {
+    it('keeps the cash spritesheet if the ghost is scared', () => {
       comp.mode = 'scared';
       comp.scaredColor = 'blue';
-      comp.setSpriteSheet(undefined, undefined, 'scared');
+      comp.setSpriteSheet(undefined, 'left', 'scared');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        'url(app/style/graphics/spriteSheets/characters/ghosts/'
-        + 'scared_blue.svg)',
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_left.svg)',
       );
 
       comp.scaredColor = 'white';
-      comp.setSpriteSheet(undefined, undefined, 'scared');
+      comp.setSpriteSheet(undefined, 'right', 'scared');
       assert.strictEqual(
         comp.animationTarget.style.backgroundImage,
-        'url(app/style/graphics/spriteSheets/characters/ghosts/'
-        + 'scared_white.svg)',
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_right.svg)',
+      );
+    });
+
+    it('sets the red cash spritesheet if the ghost has been caught', () => {
+      comp.visualState = 'caught';
+
+      comp.setSpriteSheet('blinky', 'up', 'eyes');
+
+      assert.strictEqual(
+        comp.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_red.svg)',
+      );
+    });
+
+    it('sets the payment card spritesheet if the ghost is temporarily converted', () => {
+      comp.visualState = 'paymentCard';
+
+      comp.setSpriteSheet('blinky', 'up', 'chase');
+
+      assert.strictEqual(
+        comp.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_card.svg)',
+      );
+    });
+
+    it('keeps caught red priority over the payment card visual state', () => {
+      comp.visualState = 'paymentCard';
+      comp.setCaughtVisualState();
+
+      comp.setSpriteSheet('blinky', 'up', 'eyes');
+
+      assert.strictEqual(
+        comp.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_red.svg)',
       );
     });
 
@@ -604,7 +641,9 @@ describe('ghost', () => {
     it('snaps y to 14 and sends ghost up once entered', () => {
       comp.enteredGhostHouse = sinon.fake.returns(true);
       comp.characterUtil.snapToGrid = sinon.fake();
-      window.dispatchEvent = sinon.fake();
+      global.window = {
+        dispatchEvent: sinon.fake(),
+      };
       global.Event = sinon.fake();
 
       const result = comp.handleGhostHouse({ x: 0, y: 0 });
@@ -612,7 +651,7 @@ describe('ghost', () => {
       assert.deepEqual(result, { x: 0, y: 14 });
       assert(comp.characterUtil.snapToGrid.called);
       assert.strictEqual(comp.mode, comp.defaultMode);
-      assert(window.dispatchEvent.calledWith(new Event('restoreGhost')));
+      assert(global.window.dispatchEvent.calledWith(new Event('restoreGhost')));
     });
 
     it('snaps y to 11 and sends ghost left once exited', () => {
@@ -848,6 +887,50 @@ describe('ghost', () => {
     });
   });
 
+  describe('clearCaughtVisualState', () => {
+    it('restores the current mode spritesheet', () => {
+      comp.visualState = 'caught';
+      comp.mode = 'eyes';
+      comp.direction = 'up';
+
+      comp.clearCaughtVisualState();
+
+      assert.strictEqual(comp.visualState, undefined);
+      assert.strictEqual(
+        comp.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/characters/ghosts/eyes_up.svg)',
+      );
+    });
+  });
+
+  describe('payment card visual state', () => {
+    it('sets and clears the temporary payment card visual state', () => {
+      comp.setPaymentCardVisualState();
+      assert.strictEqual(comp.visualState, 'paymentCard');
+      assert.strictEqual(
+        comp.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_card.svg)',
+      );
+
+      comp.clearPaymentCardVisualState();
+      assert.strictEqual(comp.visualState, undefined);
+      assert.strictEqual(
+        comp.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_left.svg)',
+      );
+    });
+
+    it('leaves other visual states untouched when clearing payment card state', () => {
+      comp.visualState = 'caught';
+
+      comp.clearPaymentCardVisualState();
+
+      assert.strictEqual(comp.visualState, 'caught');
+    });
+  });
+
   describe('speedUp', () => {
     it('increases the default speed', () => {
       comp.defaultSpeed = comp.slowSpeed;
@@ -895,9 +978,16 @@ describe('ghost', () => {
       };
       global.CustomEvent = sinon.fake();
       comp.mode = 'scared';
+      comp.direction = 'left';
 
       comp.checkCollision({ x: 0, y: 0 }, { x: 0.9, y: 0 });
       assert.strictEqual(comp.mode, 'eyes');
+      assert.strictEqual(comp.visualState, 'caught');
+      assert.strictEqual(
+        comp.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/characters/ghosts/cash/'
+        + 'cash_red.svg)',
+      );
       assert(global.window.dispatchEvent.calledWith(
         new CustomEvent('eatGhost', { detail: { ghost: comp } }),
       ));
