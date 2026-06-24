@@ -4500,7 +4500,9 @@ class GameEngine {
   const originalReset = GameCoordinator.prototype.reset;
   const originalEatGhost = GameCoordinator.prototype.eatGhost;
   const originalSetUiDimensions = GameCoordinator.prototype.setUiDimensions;
+  const originalReturnHomeClick = GameCoordinator.prototype.returnHomeClick;
   const originalSetStyleMeasurements = Pickup.prototype.setStyleMeasurements;
+  const startBootDuration = 1100;
 
   function scheduleFit(gameCoordinator) {
     if (!gameCoordinator || typeof gameCoordinator.fitGameToPosScreen !== 'function') {
@@ -4522,6 +4524,32 @@ class GameEngine {
         scheduleFit(gameCoordinator);
       }, delay);
     });
+  }
+
+  function setStartTerminalMessage(gameCoordinator, topLine, bottomLine) {
+    if (!gameCoordinator || !gameCoordinator.gameStartButton) {
+      return;
+    }
+
+    const screenLines = gameCoordinator.gameStartButton.querySelectorAll('.atm-screen-line');
+
+    if (screenLines[0] && typeof topLine === 'string') {
+      screenLines[0].textContent = topLine;
+    }
+
+    if (screenLines[1] && typeof bottomLine === 'string') {
+      screenLines[1].textContent = bottomLine;
+    }
+  }
+
+  function resetStartTerminal(gameCoordinator) {
+    if (!gameCoordinator || !gameCoordinator.gameStartButton) {
+      return;
+    }
+
+    gameCoordinator.gameStartButton.classList.remove('game-start--booting');
+    gameCoordinator.gameStartButton.disabled = false;
+    setStartTerminalMessage(gameCoordinator, 'INSERT CARD', '▶ PRESS PLAY');
   }
 
   Pickup.prototype.determineImage = function determineNexiImage(type, points) {
@@ -4790,6 +4818,15 @@ class GameEngine {
   };
 
   GameCoordinator.prototype.startButtonClick = function patchedStartButtonClick() {
+    if (this.startBooting) {
+      return;
+    }
+
+    this.startBooting = true;
+    this.gameStartButton.classList.add('game-start--booting');
+    this.gameStartButton.disabled = true;
+    setStartTerminalMessage(this, 'READING CARD', 'BOOTING POS...');
+
     if (this.demoMode) {
       this.stopAttractMode();
       this.setStatus('Carta autorizzata. Sessione di pagamento avviata.');
@@ -4798,7 +4835,16 @@ class GameEngine {
       this.setStatus('Sessione live. Ferma i frodatori.');
     }
 
-    originalStartButtonClick.call(this);
+    window.setTimeout(() => {
+      this.startBooting = false;
+      originalStartButtonClick.call(this);
+    }, startBootDuration);
+  };
+
+  GameCoordinator.prototype.returnHomeClick = function patchedReturnHomeClick() {
+    originalReturnHomeClick.call(this);
+    this.startBooting = false;
+    resetStartTerminal(this);
   };
 
   GameCoordinator.prototype.powerUp = function patchedPowerUp() {
