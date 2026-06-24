@@ -12,15 +12,17 @@
     </script>
 
     <link href='build/app.css' rel='stylesheet'>
+    <link href='app/style/nexi-theme.css' rel='stylesheet'>
     <script src='build/app.js'></script>
+    <script src='app/scripts/nexi-mode.js'></script>
     <link rel='shortcut icon' type='image/x-icon' href='favicon.ico'>
     <link href='https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap' rel='stylesheet'>
     <link href='https://fonts.googleapis.com/icon?family=Material+Icons'
       rel='stylesheet'>
-    <title>Pacman</title>
+    <title>Nexi Pay-Man</title>
     <meta name="author" content="Brent Ward">
-    <meta name="description" content="The classic arcade game Pac-Man! Remade in Javascript by Brent Ward">
-    <meta name="keywords" content="Pac-Man, games, retro, arcade">
+    <meta name="description" content="Nexi Pay-Man: una demo arcade a tema pagamenti digitali e antifrode.">
+    <meta name="keywords" content="Nexi, Pac-Man, arcade, pagamenti digitali, POS">
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
 
@@ -34,16 +36,29 @@
           <img src="app/style/graphics/brent_ward_logo_black.svg" alt="Brent Ward Website Link"/>
         </a>
         <img id='logo' class='logo' src='app/style/graphics/pacman_logo.png' alt='Pacman Logo'>
+        <div class='nexi-hero'>
+          <div class='nexi-kicker'>NEXI DIGITAL ARCADE</div>
+          <h1 class='nexi-title'>PAY-MAN</h1>
+          <p class='nexi-subtitle'>
+            Ripulisci il POS dai frodatori, raccogli carte premium
+            e attiva lo scudo antifrode.
+          </p>
+          <div class='nexi-chipline'>
+            <span>Contactless</span>
+            <span>Anti-fraud</span>
+            <span>Instant score</span>
+          </div>
+        </div>
         <button id='game-start' class='game-start'>
-          PLAY
+          TAP CARD TO PLAY
         </button>
+        <div id='menu-footnote' class='menu-footnote'>
+          Demo mode in attesa di una carta.
+        </div>
       </div>
 
-      <div class='header-buttons'>
-        <a href="https://www.brentward.io" >
-          <img src="app/style/graphics/brent_ward_logo.svg" alt="Brent Ward Website Link"/>
-        </a>
-        <span>
+      <div class='pos-shell'>
+        <div class='pos-controls'>
           <button>
             <i id='pause-button' class='material-icons'>
               pause
@@ -52,40 +67,61 @@
           <button>
             <i id='sound-button' class='material-icons'></i>
           </button>
-        </span>
-      </div>
+        </div>
 
       <div id='paused-text' class='paused-text'>
-        PAUSED
+        TRANSACTION PAUSED
       </div>
 
-      <div id='game-ui' class='game-ui'>
-        <div id='row-top' class='row top'>
-          <div class='column _25'>
-            <div class='one-up'>1UP</div>
-            <div id='points-display'></div>
-          </div>
-          <div class='column _50'>
-            <div>HIGH SCORE</div>
-            <div id='high-score-display'></div>
+        <div class='smartpos-top'>
+          <img
+            class='smartpos-logo-image'
+            src='app/style/graphics/nexi/smartpos_logo.png'
+            alt='Nexi SmartPOS Logo'
+          >
+        </div>
+        <div class='smartpos-printer'>
+          <div class='smartpos-printer-slot'></div>
+        </div>
+        <div class='pos-screen-frame'>
+          <div class='pos-screen'>
+            <div id='pos-screen-inner' class='pos-screen-inner'>
+              <div id='game-ui' class='game-ui'>
+                <div id='row-top' class='row top'>
+                  <div class='column _25'>
+                    <div class='one-up'>IOSI</div>
+                    <div id='points-display'></div>
+                  </div>
+                  <div class='column _50'>
+                    <div>BEST IOSI</div>
+                    <div id='high-score-display'></div>
+                  </div>
+                </div>
+
+                <div id='maze' class='maze'>
+                  <img id='maze-img' class='maze-img' src='app/style//graphics/spriteSheets/maze/maze_blue.svg' alt='Maze'>
+                  <div id='maze-cover' class='maze-cover'></div>
+                  <div id='dot-container'></div>
+                  <p id='pacman' class='pacman'></p>
+                  <p id='pacman-arrow' class='pacman'></p>
+                  <p id='clyde' class='ghost'></p>
+                  <p id='inky' class='ghost'></p>
+                  <p id='pinky' class='ghost'></p>
+                  <p id='blinky' class='ghost'></p>
+                </div>
+
+                <div id='bottom-row' class='row bottom'>
+                  <div id='extra-lives' class='extra-lives'></div>
+                  <div id='fruit-display' class='fruit-display'></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div id='maze' class='maze'>
-          <img id='maze-img' class='maze-img' src='app/style//graphics/spriteSheets/maze/maze_blue.svg' alt='Maze'>
-          <div id='maze-cover' class='maze-cover'></div>
-          <div id='dot-container'></div>
-          <p id='pacman' class='pacman'></p>
-          <p id='pacman-arrow' class='pacman'></p>
-          <p id='clyde' class='ghost'></p>
-          <p id='inky' class='ghost'></p>
-          <p id='pinky' class='ghost'></p>
-          <p id='blinky' class='ghost'></p>
-        </div>
-
-        <div id='bottom-row' class='row bottom'>
-          <div id='extra-lives' class='extra-lives'></div>
-          <div id='fruit-display' class='fruit-display'></div>
+        <div class='smartpos-side'></div>
+        <div class='smartpos-bottom'>
+          <span class='foot left'></span>
+          <span class='foot right'></span>
         </div>
       </div>
 
