@@ -34,6 +34,7 @@
   const startBootDuration = 1100;
   const posCardSwipeDelay = 950;
   const posCardSwipeDuration = 2000;
+  let posCardSwipeTimeout;
 
   function scheduleFit(gameCoordinator) {
     if (!gameCoordinator || typeof gameCoordinator.fitGameToPosScreen !== 'function') {
@@ -92,12 +93,12 @@
       return;
     }
 
-    window.clearTimeout(gameCoordinator.posCardSwipeTimeout);
+    window.clearTimeout(posCardSwipeTimeout);
     posShell.classList.remove('pos-shell--card-swipe');
-    void posShell.offsetWidth;
+    posShell.getBoundingClientRect();
     posShell.classList.add('pos-shell--card-swipe');
 
-    gameCoordinator.posCardSwipeTimeout = window.setTimeout(() => {
+    posCardSwipeTimeout = window.setTimeout(() => {
       posShell.classList.remove('pos-shell--card-swipe');
     }, posCardSwipeDuration);
   }
@@ -401,14 +402,14 @@
   GameCoordinator.prototype.returnHomeClick = function patchedReturnHomeClick() {
     originalReturnHomeClick.call(this);
     this.startBooting = false;
-    window.clearTimeout(this.posCardSwipeTimeout);
+    window.clearTimeout(posCardSwipeTimeout);
+    posCardSwipeTimeout = undefined;
     const posShell = document.querySelector('.pos-shell');
     if (posShell) {
       posShell.classList.remove('pos-shell--card-swipe');
     }
     resetStartTerminal(this);
   };
-
 
   GameCoordinator.prototype.powerUp = function patchedPowerUp() {
     this.setStatus('Scudo antifrode attivo.');
