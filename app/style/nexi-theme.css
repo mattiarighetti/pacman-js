@@ -5,6 +5,7 @@ body {
 .overflow-mask {
   background: #2d32aa;
   box-sizing: border-box;
+  padding: 0;
 }
 
 .main-menu-container {
@@ -426,8 +427,7 @@ body {
 }
 
 .loading-cover {
-  background:
-    linear-gradient(135deg, #0f2c68 0%, #1b73ff 45%, #1bebc2 100%);
+  background: #2d32aa;
 }
 
 @media only screen and (max-width: 900px) {

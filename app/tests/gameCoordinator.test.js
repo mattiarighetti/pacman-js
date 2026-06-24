@@ -288,6 +288,29 @@ describe('gameCoordinator', () => {
       global.document.getElementById = originalGetElementById;
     });
 
+    it('sets a themed dynamic placeholder for the player name input', () => {
+      const originalGetElementById = global.document.getElementById;
+      const originalRandom = Math.random;
+      const playerNameInput = createTestElement({ placeholder: 'Es. Team Nexi' });
+      Math.random = () => 0.35;
+      global.document.getElementById = (id) => (
+        id === 'player-name-input'
+          ? playerNameInput
+          : originalGetElementById(id)
+      );
+
+      try {
+        const instance = new GameCoordinator();
+        assert(Array.isArray(instance.playerNamePlaceholders));
+        assert(instance.playerNamePlaceholders.includes(playerNameInput.placeholder));
+        assert.notStrictEqual(playerNameInput.placeholder, 'Es. Team Nexi');
+        assert.strictEqual(playerNameInput.value, '');
+      } finally {
+        Math.random = originalRandom;
+        global.document.getElementById = originalGetElementById;
+      }
+    });
+
     it('handles pages without homepage options modal controls', () => {
       const originalGetElementById = global.document.getElementById;
       global.document.getElementById = (id) => (
