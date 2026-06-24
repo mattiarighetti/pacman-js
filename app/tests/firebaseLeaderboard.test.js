@@ -50,13 +50,16 @@ function createFirebase(options = {}) {
 
 describe('firebaseLeaderboard', () => {
   let clock;
+  let consoleWarn;
 
   beforeEach(() => {
     delete global.window;
     clock = sinon.useFakeTimers(new Date('2026-01-02T03:04:05.000Z').getTime());
+    consoleWarn = sinon.stub(console, 'warn');
   });
 
   afterEach(() => {
+    consoleWarn.restore();
     clock.restore();
     delete global.window;
   });
@@ -106,8 +109,9 @@ describe('firebaseLeaderboard', () => {
     });
 
     assert.strictEqual(saved, true);
+    assert.strictEqual(FirebaseLeaderboard.COLLECTION_NAME, 'leaderboards');
     assert(firebase.initializeApp.calledOnceWith(FirebaseLeaderboard.CONFIG));
-    assert(firebase.calls.collection.calledOnceWith(FirebaseLeaderboard.COLLECTION_NAME));
+    assert(firebase.calls.collection.calledOnceWith('leaderboards'));
     assert(firebase.calls.add.calledOnce);
     assert.deepStrictEqual(firebase.calls.add.firstCall.firstArg, {
       name: 'Team Nexi VeryVeryLo',
@@ -155,10 +159,19 @@ describe('firebaseLeaderboard', () => {
 
   it('returns false when firestore rejects a save', async () => {
     const firebase = createFirebase({ apps: [] });
-    firebase.calls.add.rejects(new Error('permission denied'));
+    const error = new Error('permission denied');
+    error.code = 'permission-denied';
+    firebase.calls.add.rejects(error);
     global.window = { firebase };
 
     assert.strictEqual(await FirebaseLeaderboard.saveGame({ score: 10 }), false);
+    assert.deepStrictEqual(global.window.firebaseLeaderboardLastError, {
+      operation: 'saveGame',
+      collection: 'leaderboards',
+      code: 'permission-denied',
+      message: 'permission denied',
+    });
+    assert(consoleWarn.calledWith('Firebase leaderboard error', global.window.firebaseLeaderboardLastError));
   });
 
   it('loads and normalizes the remote top leaderboard', async () => {
@@ -182,6 +195,7 @@ describe('firebaseLeaderboard', () => {
 
     const entries = await FirebaseLeaderboard.loadTop(5);
 
+    assert(firebase.calls.collection.calledOnceWith('leaderboards'));
     assert(firebase.calls.orderBy.calledOnceWith('score', 'desc'));
     assert(firebase.calls.limit.calledOnceWith(5));
     assert(firebase.calls.get.calledOnce);
@@ -210,5 +224,54 @@ describe('firebaseLeaderboard', () => {
       date: '2026-01-02T03:04:05.000Z',
       source: FirebaseLeaderboard.SOURCE,
     });
+  });
+
+  it('creates structured firebase diagnostics', () => {
+    const codedDiagnostic = FirebaseLeaderboard.createDiagnostic('loadTop', {
+      code: 'permission-denied',
+      message: 'Missing permissions',
+    });
+    const stringDiagnostic = FirebaseLeaderboard.createDiagnostic('saveGame', 'offline');
+    const missingErrorDiagnostic = FirebaseLeaderboard.createDiagnostic('saveGame');
+
+    assert.deepStrictEqual(codedDiagnostic, {
+      operation: 'loadTop',
+      collection: 'leaderboards',
+      code: 'permission-denied',
+      message: 'Missing permissions',
+    });
+    assert.deepStrictEqual(stringDiagnostic, {
+      operation: 'saveGame',
+      collection: 'leaderboards',
+      code: 'unknown',
+      message: 'offline',
+    });
+    assert.deepStrictEqual(missingErrorDiagnostic, {
+      operation: 'saveGame',
+      collection: 'leaderboards',
+      code: 'unknown',
+      message: 'Unknown Firebase error',
+    });
+  });
+
+  it('reports load failures before preserving the rejection', async () => {
+    const firebase = createFirebase({ apps: [] });
+    const error = new Error('read blocked');
+    error.code = 'permission-denied';
+    firebase.calls.get.rejects(error);
+    global.window = { firebase };
+
+    await assert.rejects(
+      FirebaseLeaderboard.loadTop(5),
+      /read blocked/,
+    );
+
+    assert.deepStrictEqual(global.window.firebaseLeaderboardLastError, {
+      operation: 'loadTop',
+      collection: 'leaderboards',
+      code: 'permission-denied',
+      message: 'read blocked',
+    });
+    assert(consoleWarn.calledWith('Firebase leaderboard error', global.window.firebaseLeaderboardLastError));
   });
 });
