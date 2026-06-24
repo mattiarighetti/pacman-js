@@ -62,8 +62,9 @@ describe('pickup', () => {
       assert.strictEqual(pickup.x, 11);
       assert.strictEqual(pickup.y, 11);
       assert.deepEqual(pickup.animationTarget.style, {
-        backgroundImage: 'url(app/style/graphics/nexi/payment_dot.svg)',
-        backgroundSize: '2px',
+        backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '2px 2px',
         height: '2px',
         left: '11px',
         position: 'absolute',
@@ -81,7 +82,8 @@ describe('pickup', () => {
       assert.strictEqual(pickup.y, 8);
       assert.deepEqual(pickup.animationTarget.style, {
         backgroundImage: 'url(app/style/graphics/nexi/power_card_blue.svg)',
-        backgroundSize: '8px',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '8px 8px',
         height: '8px',
         left: '8px',
         position: 'absolute',
@@ -97,14 +99,15 @@ describe('pickup', () => {
 
       assert.strictEqual(pickup.size, 16);
       assert.strictEqual(pickup.x, 4);
-      assert.strictEqual(pickup.y, 4);
+      assert.strictEqual(pickup.y, 6.666666666666667);
       assert.deepEqual(pickup.animationTarget.style, {
         backgroundImage: 'url(app/style/graphics/nexi/card_contactless.svg)',
-        backgroundSize: '16px',
-        height: '16px',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '16px 10.666666666666666px',
+        height: '10.666666666666666px',
         left: '4px',
         position: 'absolute',
-        top: '4px',
+        top: '6.666666666666667px',
         width: '16px',
         visibility: 'hidden',
       });
@@ -116,14 +119,15 @@ describe('pickup', () => {
 
       assert.strictEqual(pickup.size, 16);
       assert.strictEqual(pickup.x, 4);
-      assert.strictEqual(pickup.y, 4);
+      assert.strictEqual(pickup.y, 6.666666666666667);
       assert.deepEqual(pickup.animationTarget.style, {
         backgroundImage: 'url(app/style/graphics/nexi/card_contactless.svg)',
-        backgroundSize: '16px',
-        height: '16px',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '16px 10.666666666666666px',
+        height: '10.666666666666666px',
         left: '4px',
         position: 'absolute',
-        top: '4px',
+        top: '6.666666666666667px',
         width: '16px',
         visibility: 'hidden',
       });
@@ -135,15 +139,16 @@ describe('pickup', () => {
 
       assert.strictEqual(pickup.size, 16);
       assert.strictEqual(pickup.x, 4);
-      assert.strictEqual(pickup.y, 4);
+      assert.strictEqual(pickup.y, 6.666666666666667);
       assert.deepEqual(pickup.animationTarget.style, {
         backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/'
          + 'otp.svg)',
-        backgroundSize: '16px',
-        height: '16px',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '16px 10.666666666666666px',
+        height: '10.666666666666666px',
         left: '4px',
         position: 'absolute',
-        top: '4px',
+        top: '6.666666666666667px',
         width: '16px',
         visibility: 'hidden',
       });
@@ -206,7 +211,10 @@ describe('pickup', () => {
 
     it('returns payment images for other pickups', () => {
       const pacdot = pickup.determineImage('pacdot', undefined);
-      assert.strictEqual(pacdot, `${baseUrl}payment_dot.svg)`);
+      assert.strictEqual(
+        pacdot,
+        'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)',
+      );
 
       const powerPellet = pickup.determineImage('powerPellet', undefined);
       assert.strictEqual(powerPellet, `${baseUrl}power_card_blue.svg)`);
@@ -218,6 +226,12 @@ describe('pickup', () => {
       assert.strictEqual(
         otp,
         'url(app/style/graphics/spriteSheets/pickups/otp.svg)',
+      );
+
+      const unrecognized = pickup.determineImage('unknown', undefined);
+      assert.strictEqual(
+        unrecognized,
+        'url(app/style/graphics/spriteSheets/pickups/pacdot.svg)',
       );
     });
   });
@@ -253,7 +267,7 @@ describe('pickup', () => {
       pickup.showContactless(5, 6, 8);
       assert.strictEqual(pickup.size, 16);
       assert.strictEqual(pickup.x, 36);
-      assert.strictEqual(pickup.y, 44);
+      assert.strictEqual(pickup.y, 46.666666666666664);
       assert.deepEqual(pickup.center, {
         x: 40,
         y: 48,
@@ -283,7 +297,7 @@ describe('pickup', () => {
       pickup.showOtp(5, 6, 8);
       assert.strictEqual(pickup.size, 16);
       assert.strictEqual(pickup.x, 36);
-      assert.strictEqual(pickup.y, 44);
+      assert.strictEqual(pickup.y, 46.666666666666664);
       assert.deepEqual(pickup.center, {
         x: 40,
         y: 48,
