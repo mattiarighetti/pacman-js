@@ -165,6 +165,7 @@ describe('gameCoordinator', () => {
 
   describe('constructor', () => {
     it('registers pause menu button click listeners', () => {
+      const originalGetElementById = global.document.getElementById;
       const defaultElement = () => ({
         appendChild: () => {},
         removeChild: () => {},
@@ -196,6 +197,22 @@ describe('gameCoordinator', () => {
       assert(restartGameButton.addEventListener.calledWith('click'));
       assert.strictEqual(typeof newComp.resumeGameButton.addEventListener, 'function');
       assert.strictEqual(typeof newComp.restartGameButton.addEventListener, 'function');
+
+      global.document.getElementById = originalGetElementById;
+    });
+
+    it('handles pages without a player name input', () => {
+      const originalGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => (
+        id === 'player-name-input'
+          ? null
+          : originalGetElementById(id)
+      );
+
+      const instance = new GameCoordinator();
+      assert.strictEqual(instance.playerNameInput, null);
+
+      global.document.getElementById = originalGetElementById;
     });
   });
 
@@ -203,6 +220,8 @@ describe('gameCoordinator', () => {
     it('calls init on firstGame', () => {
       comp.init = sinon.fake();
       comp.firstGame = false;
+      comp.playerNameInput = { value: 'Team Nexi' };
+      global.localStorage.setItem = sinon.fake();
 
       comp.startButtonClick();
       assert(!comp.init.called);
@@ -210,6 +229,7 @@ describe('gameCoordinator', () => {
       assert.strictEqual(comp.rightCover.style.right, '-50%');
       assert.strictEqual(comp.mainMenu.style.opacity, 0);
       assert.strictEqual(comp.gameStartButton.disabled, true);
+      assert(global.localStorage.setItem.calledWith('pacmanNexiCurrentPlayer', 'Team Nexi'));
 
       clock.tick(1000);
       assert.strictEqual(comp.mainMenu.style.visibility, 'hidden');
@@ -693,38 +713,120 @@ describe('gameCoordinator', () => {
       comp.handleTouchEnd({
         changedTouches: [{ clientX: originalX, clientY: originalY * 2 }],
       });
-      assert(global.window.dispatchEvent.calledWith(new CustomEvent('swipe', {
-        detail: {
-          direction: 'down',
-        },
-      })));
+      assert.strictEqual(global.window.dispatchEvent.firstCall.firstArg.detail.direction, 'down');
 
       comp.handleTouchEnd({
         changedTouches: [{ clientX: originalX, clientY: originalY * -1 }],
       });
-      assert(global.window.dispatchEvent.calledWith(new CustomEvent('swipe', {
-        detail: {
-          direction: 'up',
-        },
-      })));
+      assert.strictEqual(global.window.dispatchEvent.secondCall.firstArg.detail.direction, 'up');
 
       comp.handleTouchEnd({
         changedTouches: [{ clientX: originalX * 2, clientY: originalY }],
       });
-      assert(global.window.dispatchEvent.calledWith(new CustomEvent('swipe', {
-        detail: {
-          direction: 'right',
-        },
-      })));
+      assert.strictEqual(global.window.dispatchEvent.thirdCall.firstArg.detail.direction, 'right');
 
       comp.handleTouchEnd({
         changedTouches: [{ clientX: originalX * -1, clientY: originalY }],
       });
-      assert(global.window.dispatchEvent.calledWith(new CustomEvent('swipe', {
-        detail: {
-          direction: 'left',
-        },
-      })));
+      assert.strictEqual(global.window.dispatchEvent.getCall(3).firstArg.detail.direction, 'left');
+    });
+  });
+
+  describe('sanitizePlayerName', () => {
+    it('returns a default player name when input is blank', () => {
+      assert.strictEqual(comp.sanitizePlayerName('   '), 'Player Nexi');
+      assert.strictEqual(comp.sanitizePlayerName(null), 'Player Nexi');
+    });
+
+    it('normalizes spaces and truncates long names', () => {
+      const longName = '  Team    Nexi    VeryVeryLongName  ';
+      assert.strictEqual(comp.sanitizePlayerName(longName), 'Team Nexi VeryVeryLo');
+    });
+  });
+
+  describe('saveLeaderboardEntry', () => {
+    it('does nothing if the score is zero', () => {
+      comp.points = 0;
+      global.localStorage.setItem = sinon.fake();
+
+      comp.saveLeaderboardEntry();
+      assert(!global.localStorage.setItem.called);
+    });
+
+    it('stores a sorted leaderboard with a max of 20 records', () => {
+      const existing = [];
+      for (let i = 0; i < 21; i += 1) {
+        existing.push({
+          name: `Player${i}`,
+          score: i,
+          date: '2026-01-01T00:00:00.000Z',
+        });
+      }
+
+      comp.points = 5000;
+      comp.currentPlayerName = 'Nexi Hero';
+      global.localStorage.getItem = sinon.fake((key) => {
+        if (key === 'pacmanNexiLeaderboard') {
+          return JSON.stringify(existing);
+        }
+
+        return undefined;
+      });
+      global.localStorage.setItem = sinon.fake();
+
+      comp.saveLeaderboardEntry();
+      assert(global.localStorage.setItem.calledOnce);
+      assert.strictEqual(global.localStorage.setItem.firstCall.args[0], 'pacmanNexiLeaderboard');
+
+      const saved = JSON.parse(global.localStorage.setItem.firstCall.args[1]);
+      assert.strictEqual(saved.length, 20);
+      assert.strictEqual(saved[0].name, 'Nexi Hero');
+      assert.strictEqual(saved[0].score, 5000);
+    });
+
+    it('handles invalid or non-array leaderboard values', () => {
+      comp.points = 120;
+      comp.currentPlayerName = 'Nexi Dev';
+      global.localStorage.setItem = sinon.fake();
+
+      global.localStorage.getItem = sinon.fake.returns('{invalid-json');
+      comp.saveLeaderboardEntry();
+      let saved = JSON.parse(global.localStorage.setItem.lastCall.args[1]);
+      assert.strictEqual(saved.length, 1);
+
+      global.localStorage.getItem = sinon.fake.returns('{"foo":"bar"}');
+      comp.saveLeaderboardEntry();
+      saved = JSON.parse(global.localStorage.setItem.lastCall.args[1]);
+      assert.strictEqual(saved.length, 1);
+    });
+
+    it('starts from an empty leaderboard when none is stored', () => {
+      comp.points = 240;
+      comp.currentPlayerName = 'Nexi Rookie';
+      global.localStorage.getItem = sinon.fake.returns(undefined);
+      global.localStorage.setItem = sinon.fake();
+
+      comp.saveLeaderboardEntry();
+      const saved = JSON.parse(global.localStorage.setItem.firstCall.args[1]);
+      assert.strictEqual(saved.length, 1);
+      assert.strictEqual(saved[0].name, 'Nexi Rookie');
+      assert.strictEqual(saved[0].score, 240);
+    });
+
+    it('sorts leaderboard entries with missing scores as zero', () => {
+      comp.points = 1;
+      comp.currentPlayerName = 'Nexi Finisher';
+      global.localStorage.getItem = sinon.fake.returns(JSON.stringify([
+        { name: 'No Score' },
+        { name: 'Low Score', score: 0 },
+      ]));
+      global.localStorage.setItem = sinon.fake();
+
+      comp.saveLeaderboardEntry();
+      const saved = JSON.parse(global.localStorage.setItem.firstCall.args[1]);
+      assert.strictEqual(saved[0].name, 'Nexi Finisher');
+      assert.strictEqual(saved[1].score, undefined);
+      assert.strictEqual(saved[2].score, 0);
     });
   });
 

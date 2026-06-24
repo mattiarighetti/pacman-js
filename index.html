@@ -11,7 +11,7 @@
       gtag('config', 'UA-142539004-1');
     </script>
 
-    <link href='build/app.css' rel='stylesheet'>
+    <link href='build/app.css?v=3' rel='stylesheet'>
     <link href='app/style/nexi-theme.css' rel='stylesheet'>
     <script src='build/app.js'></script>
     <script src='app/scripts/nexi-mode.js'></script>
@@ -19,10 +19,10 @@
     <link href='https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap' rel='stylesheet'>
     <link href='https://fonts.googleapis.com/icon?family=Material+Icons'
       rel='stylesheet'>
-    <title>Nexi Pay-Man</title>
-    <meta name="author" content="Brent Ward">
-    <meta name="description" content="Nexi Pay-Man: una demo arcade a tema pagamenti digitali e antifrode.">
-    <meta name="keywords" content="Nexi, Pac-Man, arcade, pagamenti digitali, POS">
+    <title>Nexi Pay-Man Arena</title>
+    <meta name="author" content="Nexi Hackathon Team">
+    <meta name="description" content="Nexi Pay-Man Arena: demo arcade a tema pagamenti digitali con classifica giocatori.">
+    <meta name="keywords" content="Nexi, Pac-Man, Pay-Man, hackathon, leaderboard, arcade, pagamenti digitali, POS">
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
 
@@ -32,9 +32,11 @@
       <div id='preload-div' class='preload-div'></div>
 
       <div id='main-menu-container' class='main-menu-container'>
-        <a href="https://www.brentward.io" class="brent-ward-logo">
-          <img src="app/style/graphics/brent_ward_logo_black.svg" alt="Brent Ward Website Link"/>
+        <a href="https://www.nexi.it/it" class="brent-ward-logo" target="_blank" rel="noopener noreferrer">
+          <img src="https://www.nexi.it/content/dam/nexinew/icone/nexi-logo-white.svg" alt="Nexi Website Link"/>
         </a>
+        <div class='intro-glow intro-glow-left'></div>
+        <div class='intro-glow intro-glow-right'></div>
         <img id='logo' class='logo' src='app/style/graphics/pacman_logo.png' alt='Pacman Logo'>
         <div class='nexi-hero'>
           <div class='nexi-kicker'>NEXI DIGITAL ARCADE</div>
@@ -49,11 +51,38 @@
             <span>Instant score</span>
           </div>
         </div>
-        <button id='game-start' class='game-start'>
-          TAP CARD TO PLAY
-        </button>
-        <div id='menu-footnote' class='menu-footnote'>
-          Demo mode in attesa di una carta.
+        <div class='menu-actions'>
+          <label for='player-name-input' class='player-name-label'>Nome giocatore</label>
+          <input id='player-name-input' class='player-name-input' type='text' maxlength='20' placeholder='Es. Team Nexi' />
+          <button id='game-start' class='game-start' aria-label='Avvia partita'>
+            <div class='atm-body'>
+              <div class='atm-top-bar'>
+                <img class='atm-logo' src='https://www.nexi.it/content/dam/nexinew/icone/nexi-logo-white.svg' alt='Nexi'/>
+              </div>
+              <div class='atm-screen'>
+                <p class='atm-screen-line'>INSERT CARD</p>
+                <p class='atm-screen-line atm-blink'>&#9658; PRESS PLAY</p>
+              </div>
+              <div class='atm-slot-area'>
+                <span class='atm-slot-label'>&#9664;</span>
+                <div class='atm-slot'>
+                  <div class='atm-card'></div>
+                </div>
+              </div>
+              <div class='atm-pad'>
+                <span class='atm-key-dot'></span>
+                <span class='atm-key-dot'></span>
+                <span class='atm-key-dot'></span>
+                <span class='atm-key-dot'></span>
+                <span class='atm-key-dot'></span>
+                <span class='atm-key-dot'></span>
+              </div>
+            </div>
+          </button>
+          <a href='leaderboard.html' class='leaderboard-link'>&#127942; CLASSIFICA</a>
+          <div id='menu-footnote' class='menu-footnote'>
+            Demo mode in attesa di una carta.
+          </div>
         </div>
       </div>
 
@@ -69,15 +98,15 @@
           </button>
         </div>
 
-      <div id='paused-text' class='paused-text'>
-        <div class='pause-title'>TRANSACTION PAUSED</div>
-        <button id='resume-game' class='pause-action pause-resume'>
-          RESUME GAME
-        </button>
-        <button id='restart-game' class='pause-action pause-restart'>
-          RESTART GAME
-        </button>
-      </div>
+        <div id='paused-text' class='paused-text'>
+          <div class='pause-title'>TRANSACTION PAUSED</div>
+          <button id='resume-game' class='pause-action pause-resume'>
+            RESUME GAME
+          </button>
+          <button id='restart-game' class='pause-action pause-restart'>
+            RESTART GAME
+          </button>
+        </div>
 
         <div class='smartpos-top'>
           <img
