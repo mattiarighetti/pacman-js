@@ -2104,12 +2104,26 @@ class GameCoordinator {
     this.fruitDisplay = document.getElementById('fruit-display');
     this.mainMenu = document.getElementById('main-menu-container');
     this.gameStartButton = document.getElementById('game-start');
+    this.homeOptionsButton = document.getElementById('home-options-button');
+    this.homeOptionsCloseButton = document.getElementById('home-options-close');
+    this.homeOptionsPanel = document.getElementById('home-options-panel');
+    this.menuActions = document.querySelector('.menu-actions');
     this.resumeGameButton = document.getElementById('resume-game');
     this.restartGameButton = document.getElementById('restart-game');
     this.returnHomeButton = document.getElementById('return-home');
     this.playerNameInput = document.getElementById('player-name-input');
     this.pauseButton = document.getElementById('pause-button');
     this.soundButton = document.getElementById('sound-button');
+    this.posControls = document.querySelector('.pos-controls');
+    this.pauseOptionsPanel = document.getElementById('pause-options-panel');
+    this.volumeSliders = [
+      document.getElementById('home-volume-slider'),
+      document.getElementById('pause-volume-slider'),
+    ].filter((element) => element);
+    this.volumeLabels = [
+      document.getElementById('home-volume-label'),
+      document.getElementById('pause-volume-label'),
+    ].filter((element) => element);
     this.leftCover = document.getElementById('left-cover');
     this.rightCover = document.getElementById('right-cover');
     this.pausedText = document.getElementById('paused-text');
@@ -2212,6 +2226,15 @@ class GameCoordinator {
       'click',
       this.startButtonClick.bind(this),
     );
+    if (this.homeOptionsButton) {
+      this.homeOptionsButton.addEventListener('click', this.showOptions.bind(this));
+    }
+    if (this.homeOptionsCloseButton) {
+      this.homeOptionsCloseButton.addEventListener('click', this.hideOptions.bind(this));
+    }
+    if (this.homeOptionsPanel) {
+      this.homeOptionsPanel.addEventListener('click', this.homeOptionsPanelClick.bind(this));
+    }
     this.resumeGameButton.addEventListener(
       'click',
       this.resumeGameClick.bind(this),
@@ -2220,15 +2243,24 @@ class GameCoordinator {
       'click',
       this.restartGameClick.bind(this),
     );
-    this.returnHomeButton.addEventListener(
-      'click',
-      this.returnHomeClick.bind(this),
-    );
-    this.pauseButton.addEventListener('click', this.handlePauseKey.bind(this));
-    this.soundButton.addEventListener(
-      'click',
-      this.soundButtonClick.bind(this),
-    );
+    if (this.returnHomeButton) {
+      this.returnHomeButton.addEventListener(
+        'click',
+        this.returnHomeClick.bind(this),
+      );
+    }
+    if (this.pauseButton) {
+      this.pauseButton.addEventListener('click', this.handlePauseKey.bind(this));
+    }
+    if (this.soundButton) {
+      this.soundButton.addEventListener(
+        'click',
+        this.soundButtonClick.bind(this),
+      );
+    }
+    this.volumeSliders.forEach((slider) => {
+      slider.addEventListener('input', this.volumeSliderInput.bind(this));
+    });
 
     this.preloadAssets();
     // Payment success overlay
@@ -2297,6 +2329,9 @@ class GameCoordinator {
     this.leftCover.style.left = '-50%';
     this.rightCover.style.right = '-50%';
     this.mainMenu.style.opacity = 0;
+    if (this.posControls) {
+      this.posControls.hidden = false;
+    }
     this.gameStartButton.disabled = true;
 
     setTimeout(() => {
@@ -2378,7 +2413,10 @@ class GameCoordinator {
   hidePauseMenu() {
     this.gameUi.style.filter = 'unset';
     this.pausedText.style.visibility = 'hidden';
-    this.pauseButton.innerHTML = 'pause';
+    if (this.pauseOptionsPanel) {
+      this.pauseOptionsPanel.style.display = 'none';
+    }
+    this.setPauseButtonIcon('pause');
   }
 
   /**
@@ -2396,17 +2434,108 @@ class GameCoordinator {
    * Toggles the master volume for the soundManager, and saves the preference to storage
    */
   soundButtonClick() {
-    const newVolume = this.soundManager.masterVolume === 1 ? 0 : 1;
-    this.soundManager.setMasterVolume(newVolume);
-    localStorage.setItem('volumePreference', newVolume);
-    this.setSoundButtonIcon(newVolume);
+    this.showOptions();
+  }
+
+  /**
+   * Shows the options controls from the current screen
+   */
+  showOptions() {
+    if (this.pausedText && this.pausedText.style.visibility === 'visible') {
+      if (this.pauseOptionsPanel) {
+        this.pauseOptionsPanel.style.display = 'flex';
+      }
+      return;
+    }
+
+    if (this.homeOptionsPanel) {
+      this.homeOptionsPanel.style.display = 'flex';
+    }
+  }
+
+  /**
+   * Closes homepage options when the modal backdrop is clicked
+   * @param {Event} e - The click event from the options backdrop
+   */
+  homeOptionsPanelClick(e) {
+    if (e.target === e.currentTarget) {
+      this.hideOptions();
+    }
+  }
+
+  /**
+   * Hides the homepage options panel
+   */
+  hideOptions() {
+    if (this.homeOptionsPanel) {
+      this.homeOptionsPanel.style.display = 'none';
+    }
+  }
+
+  /**
+   * Updates volume from a slider input event
+   * @param {Event} e - The slider input event
+   */
+  volumeSliderInput(e) {
+    this.setVolumePreference(Number(e.target.value) / 100);
+  }
+
+  /**
+   * Applies the persisted volume preference to sound and UI
+   */
+  applyStoredVolumePreference() {
+    const storedPreference = parseFloat(
+      localStorage.getItem('volumePreference') || 1,
+    );
+    this.setVolumePreference(storedPreference, false);
+  }
+
+  /**
+   * Sets and persists the current volume preference
+   * @param {Number} volume - Volume from 0 to 1
+   * @param {Boolean} persist - Whether to save the value
+   */
+  setVolumePreference(volume, persist = true) {
+    const normalizedVolume = Math.min(Math.max(volume || 0, 0), 1);
+    const volumePercent = Math.round(normalizedVolume * 100);
+
+    this.soundManager.setMasterVolume(normalizedVolume);
+    if (persist) {
+      localStorage.setItem('volumePreference', normalizedVolume);
+    }
+    this.syncVolumeControls(volumePercent);
   }
 
   /**
    * Sets the icon for the sound button
    */
-  setSoundButtonIcon(newVolume) {
-    this.soundButton.innerHTML = newVolume === 0 ? 'volume_off' : 'volume_up';
+  setSoundButtonIcon() {
+    if (this.soundButton) {
+      this.soundButton.innerHTML = 'settings';
+    }
+  }
+
+  /**
+   * Syncs all visible volume controls
+   * @param {Number} volumePercent - Volume from 0 to 100
+   */
+  syncVolumeControls(volumePercent) {
+    this.volumeSliders.forEach((slider, index) => {
+      this.volumeSliders[index].value = `${volumePercent}`;
+    });
+    this.volumeLabels.forEach((label, index) => {
+      this.volumeLabels[index].textContent = `Volume ${volumePercent}%`;
+    });
+    this.setSoundButtonIcon();
+  }
+
+  /**
+   * Sets the icon for the pause button
+   */
+  setPauseButtonIcon(icon) {
+    if (this.pauseButton) {
+      this.pauseButton.innerHTML = icon;
+    }
   }
 
   /**
@@ -2790,12 +2919,7 @@ class GameCoordinator {
     this.highScoreDisplay.innerHTML = this.highScore || '00';
     this.clearDisplay(this.fruitDisplay);
 
-    const volumePreference = parseInt(
-      localStorage.getItem('volumePreference') || 1,
-      10,
-    );
-    this.setSoundButtonIcon(volumePreference);
-    this.soundManager.setMasterVolume(volumePreference);
+    this.applyStoredVolumePreference();
   }
 
   /**
@@ -3076,7 +3200,7 @@ class GameCoordinator {
       this.handlePauseKey();
     } else if (e.keyCode === 81) {
       // Q
-      this.soundButtonClick();
+      this.showOptions();
     } else if (this.movementKeys[e.keyCode]) {
       this.changeDirection(this.movementKeys[e.keyCode]);
     }
@@ -3114,7 +3238,7 @@ class GameCoordinator {
         this.soundManager.setAmbience('pause_beat', true);
         this.gameUi.style.filter = 'blur(5px)';
         this.pausedText.style.visibility = 'visible';
-        this.pauseButton.innerHTML = 'play_arrow';
+        this.setPauseButtonIcon('play_arrow');
         this.activeTimers.forEach((timer) => {
           timer.pause();
         });

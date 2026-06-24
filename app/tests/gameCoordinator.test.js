@@ -10,6 +10,21 @@ const mazeArray = [
 ];
 let clock;
 
+function createTestElement(overrides = {}) {
+  return {
+    appendChild: () => {},
+    removeChild: () => {},
+    addEventListener: () => {},
+    remove: () => {},
+    style: {},
+    scrollWidth: 500,
+    value: '',
+    textContent: '',
+    innerHTML: '',
+    ...overrides,
+  };
+}
+
 describe('gameCoordinator', () => {
   beforeEach(() => {
     global.Pacman = class {
@@ -69,20 +84,19 @@ describe('gameCoordinator', () => {
       stopAmbience() {}
     };
 
+    global.window = {
+      innerHeight: 1000,
+      innerWidth: 1000,
+    };
+
     global.document = {
       documentElement: {
         clientHeight: 1000,
         clientWidth: 1000,
       },
       getElementsByTagName: () => [{ appendChild: () => {} }],
-      getElementById: () => ({
-        appendChild: () => {},
-        removeChild: () => {},
-        addEventListener: () => {},
-        remove: () => {},
-        style: {},
-        scrollWidth: 500,
-      }),
+      querySelector: () => createTestElement({ hidden: true }),
+      getElementById: () => createTestElement(),
       createElement: () => ({
         classList: {
           add: () => {},
@@ -225,6 +239,39 @@ describe('gameCoordinator', () => {
       global.document.getElementById = originalGetElementById;
     });
 
+    it('registers homepage options modal click listeners', () => {
+      const originalGetElementById = global.document.getElementById;
+      const homeOptionsButton = createTestElement({ addEventListener: sinon.fake() });
+      const homeOptionsCloseButton = createTestElement({ addEventListener: sinon.fake() });
+      const homeOptionsPanel = createTestElement({ addEventListener: sinon.fake() });
+
+      global.document.getElementById = (id) => {
+        if (id === 'home-options-button') {
+          return homeOptionsButton;
+        }
+
+        if (id === 'home-options-close') {
+          return homeOptionsCloseButton;
+        }
+
+        if (id === 'home-options-panel') {
+          return homeOptionsPanel;
+        }
+
+        return createTestElement();
+      };
+
+      const newComp = new GameCoordinator();
+      assert(homeOptionsButton.addEventListener.calledWith('click'));
+      assert(homeOptionsCloseButton.addEventListener.calledWith('click'));
+      assert(homeOptionsPanel.addEventListener.calledWith('click'));
+      assert.strictEqual(newComp.homeOptionsButton, homeOptionsButton);
+      assert.strictEqual(newComp.homeOptionsCloseButton, homeOptionsCloseButton);
+      assert.strictEqual(newComp.homeOptionsPanel, homeOptionsPanel);
+
+      global.document.getElementById = originalGetElementById;
+    });
+
     it('handles pages without a player name input', () => {
       const originalGetElementById = global.document.getElementById;
       global.document.getElementById = (id) => (
@@ -238,6 +285,54 @@ describe('gameCoordinator', () => {
 
       global.document.getElementById = originalGetElementById;
     });
+
+    it('handles pages without homepage options modal controls', () => {
+      const originalGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => (
+        ['home-options-button', 'home-options-close', 'home-options-panel'].includes(id)
+          ? null
+          : originalGetElementById(id)
+      );
+
+      const instance = new GameCoordinator();
+      assert.strictEqual(instance.homeOptionsButton, null);
+      assert.strictEqual(instance.homeOptionsCloseButton, null);
+      assert.strictEqual(instance.homeOptionsPanel, null);
+
+      global.document.getElementById = originalGetElementById;
+    });
+
+    it('handles pages without a return home button', () => {
+      const originalGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => (
+        id === 'return-home'
+          ? null
+          : originalGetElementById(id)
+      );
+
+      const instance = new GameCoordinator();
+      assert.strictEqual(instance.returnHomeButton, null);
+
+      global.document.getElementById = originalGetElementById;
+    });
+
+    it('handles pages without pause and sound icon buttons', () => {
+      const originalGetElementById = global.document.getElementById;
+      global.document.getElementById = (id) => (
+        ['pause-button', 'sound-button'].includes(id)
+          ? null
+          : originalGetElementById(id)
+      );
+
+      const instance = new GameCoordinator();
+      assert.strictEqual(instance.pauseButton, null);
+      assert.strictEqual(instance.soundButton, null);
+
+      instance.setPauseButtonIcon('pause');
+      instance.setSoundButtonIcon(1);
+
+      global.document.getElementById = originalGetElementById;
+    });
   });
 
   describe('startButtonClick', () => {
@@ -245,6 +340,7 @@ describe('gameCoordinator', () => {
       comp.init = sinon.fake();
       comp.firstGame = false;
       comp.playerNameInput = { value: 'Team Nexi' };
+      comp.posControls = { hidden: true };
       global.localStorage.setItem = sinon.fake();
 
       comp.startButtonClick();
@@ -252,6 +348,7 @@ describe('gameCoordinator', () => {
       assert.strictEqual(comp.leftCover.style.left, '-50%');
       assert.strictEqual(comp.rightCover.style.right, '-50%');
       assert.strictEqual(comp.mainMenu.style.opacity, 0);
+      assert.strictEqual(comp.posControls.hidden, false);
       assert.strictEqual(comp.gameStartButton.disabled, true);
       assert(global.localStorage.setItem.calledWith('pacmanNexiCurrentPlayer', 'Team Nexi'));
 
@@ -303,6 +400,16 @@ describe('gameCoordinator', () => {
       assert.deepEqual(comp.gameEngine.entityList, ['reset-entity']);
       assert(!comp.gameEngine.start.called);
       assert(comp.startGameplay.calledWith(true));
+    });
+
+    it('starts without optional POS controls', () => {
+      comp.init = sinon.fake();
+      comp.firstGame = false;
+      comp.posControls = null;
+
+      comp.startButtonClick();
+      assert.strictEqual(comp.mainMenu.style.opacity, 0);
+      assert(!comp.init.called);
     });
   });
 
@@ -470,18 +577,154 @@ describe('gameCoordinator', () => {
   });
 
   describe('soundButtonClick', () => {
-    it('calls setMasterVolume and toggles the soundButton icon', () => {
+    it('opens options instead of toggling the volume', () => {
+      comp.showOptions = sinon.fake();
       comp.soundManager.setMasterVolume = sinon.fake();
 
-      comp.soundManager.masterVolume = 1;
       comp.soundButtonClick();
-      assert(comp.soundManager.setMasterVolume.calledWith(0));
-      assert.strictEqual(comp.soundButton.innerHTML, 'volume_off');
+      assert(comp.showOptions.called);
+      assert(!comp.soundManager.setMasterVolume.called);
+      assert.strictEqual(comp.soundButton.innerHTML, 'settings');
+    });
+  });
 
-      comp.soundManager.masterVolume = 0;
-      comp.soundButtonClick();
+  describe('hidePauseMenu', () => {
+    it('hides pause UI without an options panel', () => {
+      comp.pauseOptionsPanel = null;
+      comp.gameUi.style.filter = 'blur(5px)';
+      comp.pausedText.style.visibility = 'visible';
+      comp.pauseButton.innerHTML = 'play_arrow';
+
+      comp.hidePauseMenu();
+
+      assert.strictEqual(comp.gameUi.style.filter, 'unset');
+      assert.strictEqual(comp.pausedText.style.visibility, 'hidden');
+      assert.strictEqual(comp.pauseButton.innerHTML, 'pause');
+    });
+  });
+
+  describe('options menu', () => {
+    it('opens homepage options without hiding menu actions', () => {
+      comp.menuActions = { style: { display: 'flex' } };
+      comp.homeOptionsPanel = { style: {} };
+
+      comp.showOptions();
+      assert.strictEqual(comp.homeOptionsPanel.style.display, 'flex');
+      assert.strictEqual(comp.menuActions.style.display, 'flex');
+
+      comp.hideOptions();
+      assert.strictEqual(comp.homeOptionsPanel.style.display, 'none');
+      assert.strictEqual(comp.menuActions.style.display, 'flex');
+    });
+
+    it('closes homepage options when backdrop is clicked', () => {
+      comp.homeOptionsPanel = { style: { display: 'flex' } };
+      comp.hideOptions = sinon.fake();
+
+      assert.strictEqual(typeof comp.homeOptionsPanelClick, 'function');
+      comp.homeOptionsPanelClick({
+        currentTarget: comp.homeOptionsPanel,
+        target: comp.homeOptionsPanel,
+      });
+
+      assert(comp.hideOptions.called);
+    });
+
+    it('keeps homepage options open when dialog content is clicked', () => {
+      comp.homeOptionsPanel = { style: { display: 'flex' } };
+      comp.hideOptions = sinon.fake();
+
+      assert.strictEqual(typeof comp.homeOptionsPanelClick, 'function');
+      comp.homeOptionsPanelClick({
+        currentTarget: comp.homeOptionsPanel,
+        target: createTestElement(),
+      });
+
+      assert(!comp.hideOptions.called);
+    });
+
+    it('opens and hides options without optional homepage panels', () => {
+      comp.menuActions = null;
+      comp.homeOptionsPanel = null;
+
+      comp.showOptions();
+      comp.hideOptions();
+    });
+
+    it('shows pause options without leaving the pause menu', () => {
+      comp.pauseOptionsPanel = { style: {} };
+      comp.pausedText.style.visibility = 'visible';
+
+      comp.showOptions();
+      assert.strictEqual(comp.pauseOptionsPanel.style.display, 'flex');
+      assert.strictEqual(comp.pausedText.style.visibility, 'visible');
+    });
+
+    it('keeps pause visible when pause options panel is missing', () => {
+      comp.pauseOptionsPanel = null;
+      comp.pausedText.style.visibility = 'visible';
+
+      comp.showOptions();
+      assert.strictEqual(comp.pausedText.style.visibility, 'visible');
+    });
+
+    it('saves slider volume as a decimal and syncs labels', () => {
+      comp.soundManager.setMasterVolume = sinon.fake();
+      global.localStorage.setItem = sinon.fake();
+      comp.volumeSliders = [{ value: '100' }, { value: '100' }];
+      comp.volumeLabels = [{ textContent: '' }, { textContent: '' }];
+
+      comp.volumeSliderInput({ target: { value: '35' } });
+
+      assert(comp.soundManager.setMasterVolume.calledWith(0.35));
+      assert(global.localStorage.setItem.calledWith('volumePreference', 0.35));
+      assert.strictEqual(comp.volumeSliders[0].value, '35');
+      assert.strictEqual(comp.volumeSliders[1].value, '35');
+      assert.strictEqual(comp.volumeLabels[0].textContent, 'Volume 35%');
+      assert.strictEqual(comp.volumeLabels[1].textContent, 'Volume 35%');
+    });
+
+    it('initializes slider labels from saved volume preference', () => {
+      comp.soundManager.setMasterVolume = sinon.fake();
+      global.localStorage.getItem = sinon.fake((key) => (
+        key === 'volumePreference' ? '0.75' : undefined
+      ));
+      comp.volumeSliders = [{ value: '' }];
+      comp.volumeLabels = [{ textContent: '' }];
+
+      comp.applyStoredVolumePreference();
+
+      assert(comp.soundManager.setMasterVolume.calledWith(0.75));
+      assert.strictEqual(comp.volumeSliders[0].value, '75');
+      assert.strictEqual(comp.volumeLabels[0].textContent, 'Volume 75%');
+    });
+
+    it('clamps volume preferences and can skip persistence', () => {
+      comp.soundManager.setMasterVolume = sinon.fake();
+      global.localStorage.setItem = sinon.fake();
+      comp.volumeSliders = [{ value: '100' }];
+      comp.volumeLabels = [{ textContent: '' }];
+
+      comp.setVolumePreference(2, false);
       assert(comp.soundManager.setMasterVolume.calledWith(1));
-      assert.strictEqual(comp.soundButton.innerHTML, 'volume_up');
+      assert(!global.localStorage.setItem.called);
+      assert.strictEqual(comp.volumeSliders[0].value, '100');
+
+      comp.setVolumePreference(-1);
+      assert(comp.soundManager.setMasterVolume.calledWith(0));
+      assert(global.localStorage.setItem.calledWith('volumePreference', 0));
+      assert.strictEqual(comp.volumeLabels[0].textContent, 'Volume 0%');
+    });
+
+    it('defaults missing volume values to zero', () => {
+      comp.soundManager.setMasterVolume = sinon.fake();
+      comp.volumeSliders = [{ value: '100' }];
+      comp.volumeLabels = [{ textContent: '' }];
+
+      comp.setVolumePreference(undefined);
+      assert(comp.soundManager.setMasterVolume.calledWith(0));
+      assert.strictEqual(comp.volumeSliders[0].value, '0');
+      assert.strictEqual(comp.volumeLabels[0].textContent, 'Volume 0%');
     });
   });
 
@@ -1001,11 +1244,11 @@ describe('gameCoordinator', () => {
       assert(comp.handlePauseKey.called);
     });
 
-    it('calls soundButtonClick when Q is pressed', () => {
-      comp.soundButtonClick = sinon.fake();
+    it('opens options when Q is pressed', () => {
+      comp.showOptions = sinon.fake();
 
       comp.handleKeyDown({ keyCode: 81 });
-      assert(comp.soundButtonClick.called);
+      assert(comp.showOptions.called);
     });
 
     it("calls Pacman's changeDirection when a move key is pressed", () => {

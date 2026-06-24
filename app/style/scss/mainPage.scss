@@ -10,10 +10,7 @@ body {
 }
 
 .overflow-mask {
-  background:
-    radial-gradient(circle at 15% 20%, rgb(106 123 255 / 55%), transparent 42%),
-    radial-gradient(circle at 80% 85%, rgb(52 211 194 / 36%), transparent 40%),
-    linear-gradient(150deg, #111a57 0%, #2d32aa 45%, #090d2c 100%);
+  background: $blue-nexi;
   color: $white;
   display: flex;
   height: 100vh;
@@ -214,16 +211,22 @@ body {
 
 .main-menu-container {
   align-items: center;
+  background: $blue-nexi;
   display: flex;
   flex-direction: column;
   height: 100%;
   left: 0;
   opacity: 0;
+  overflow: hidden;
   position: absolute;
   transition: opacity 0.25s;
   visibility: hidden;
   width: 100%;
   z-index: 5;
+}
+
+.main-menu-container.demo-visible {
+  background: $blue-nexi;
 }
 
 .intro-glow {
@@ -233,7 +236,7 @@ body {
   opacity: 0.75;
   position: absolute;
   width: 260px;
-  z-index: -1;
+  z-index: 0;
 }
 
 .intro-glow-left {
@@ -292,6 +295,7 @@ body {
 }
 
 .brent-ward-logo {
+  z-index: 1;
   position: absolute;
   top: 2rem;
   left: 3rem;
@@ -304,7 +308,9 @@ body {
 .logo {
   margin-top: 0;
   max-width: min(76vw, 620px);
+  position: relative;
   width: 620px;
+  z-index: 1;
 }
 
 .menu-actions {
@@ -313,7 +319,9 @@ body {
   flex-direction: column;
   gap: 0.75rem;
   margin-top: 1.3rem;
+  position: relative;
   width: min(430px, 86vw);
+  z-index: 1;
 }
 
 .player-name-label {
@@ -486,6 +494,7 @@ body {
   background: #07103a;
   border: 4px solid #ffd054;
   box-shadow: 0 6px 0 #a07000;
+  box-sizing: border-box;
   color: #ffd054;
   display: block;
   font-size: 0.68rem;
@@ -495,7 +504,7 @@ body {
   text-align: center;
   text-decoration: none;
   transition: transform 0.1s, box-shadow 0.1s;
-  width: 100%;
+  width: min(260px, 72vw);
 
   &:hover {
     background: #0f1f6a;
@@ -506,6 +515,91 @@ body {
     box-shadow: 0 2px 0 #a07000;
     transform: translateY(4px);
   }
+}
+
+.options-link {
+  cursor: pointer;
+}
+
+.options-panel {
+  align-items: center;
+  background: rgb(7 16 58 / 92%);
+  border: 4px solid #1bebc2;
+  box-shadow: 0 8px 0 #04102f;
+  box-sizing: border-box;
+  color: #e8f5ff;
+  display: none;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.3rem;
+  padding: 1.2rem;
+  width: min(430px, 86vw);
+}
+
+.home-options-panel {
+  align-items: center;
+  background: rgb(0 0 0 / 32%);
+  bottom: 0;
+  box-sizing: border-box;
+  display: none;
+  justify-content: center;
+  left: 0;
+  padding: 1rem;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 3;
+}
+
+.home-options-dialog {
+  display: flex;
+  margin-top: 0;
+  position: relative;
+  width: min(340px, 82vw);
+}
+
+.options-close {
+  align-items: center;
+  background: #1bebc2;
+  border: 3px solid #07103a;
+  box-shadow: 0 3px 0 #04102f;
+  color: #07103a;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.7rem;
+  height: 2rem;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  position: absolute;
+  right: 0.65rem;
+  top: 0.65rem;
+  width: 2rem;
+}
+
+.pause-options-panel {
+  margin-top: 0;
+  max-width: 90vw;
+}
+
+.options-title {
+  color: #ffd054;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+}
+
+.volume-control {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+}
+
+.volume-slider {
+  accent-color: #1bebc2;
+  cursor: pointer;
+  width: 100%;
 }
 
 @media only screen and (max-width: 600px) {

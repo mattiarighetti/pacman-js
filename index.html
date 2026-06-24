@@ -11,9 +11,9 @@
       gtag('config', 'UA-142539004-1');
     </script>
 
-    <link href='build/app.css?v=4' rel='stylesheet'>
-    <link href='app/style/nexi-theme.css' rel='stylesheet'>
-    <script src='build/app.js?v=6'></script>
+    <link href='build/app.css?v=5' rel='stylesheet'>
+    <link href='app/style/nexi-theme.css?v=3' rel='stylesheet'>
+    <script src='build/app.js?v=7'></script>
     <link rel='shortcut icon' type='image/svg+xml' href='app/style/graphics/nexi/mini_pos_icon.svg'>
     <link href='https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap' rel='stylesheet'>
     <link href='https://fonts.googleapis.com/icon?family=Material+Icons'
@@ -44,11 +44,6 @@
             Ripulisci il POS dai frodatori, raccogli carte premium
             e attiva lo scudo antifrode.
           </p>
-          <div class='nexi-chipline'>
-            <span>Contactless</span>
-            <span>Anti-fraud</span>
-            <span>Instant score</span>
-          </div>
         </div>
         <div class='menu-actions'>
           <label for='player-name-input' class='player-name-label'>Nome giocatore</label>
@@ -78,19 +73,28 @@
               </div>
             </div>
           </button>
+          <button id='home-options-button' class='leaderboard-link options-link' type='button'>⚙ OPZIONI</button>
           <a href='leaderboard.html' class='leaderboard-link'>&#127942; CLASSIFICA</a>
+        </div>
+        <div id='home-options-panel' class='home-options-panel'>
+          <div class='home-options-dialog options-panel' role='dialog' aria-modal='true' aria-labelledby='home-options-title'>
+            <button id='home-options-close' class='options-close' type='button' aria-label='Chiudi opzioni'>X</button>
+            <div id='home-options-title' class='options-title'>OPZIONI</div>
+            <label class='volume-control' for='home-volume-slider'>
+              <span id='home-volume-label'>Volume 100%</span>
+              <input id='home-volume-slider' class='volume-slider' type='range' min='0' max='100' step='1' value='100'>
+            </label>
+          </div>
         </div>
       </div>
 
       <div class='pos-shell'>
         <div class='pos-controls'>
           <button>
-            <i id='pause-button' class='material-icons'>
-              pause
-            </i>
+            <i id='pause-button' class='material-icons'>pause</i>
           </button>
           <button>
-            <i id='sound-button' class='material-icons'></i>
+            <i id='sound-button' class='material-icons'>settings</i>
           </button>
         </div>
 
@@ -105,6 +109,13 @@
           <button id='return-home' class='pause-action pause-home'>
             RETURN HOME
           </button>
+          <div id='pause-options-panel' class='pause-options-panel options-panel'>
+            <div class='options-title'>OPZIONI</div>
+            <label class='volume-control' for='pause-volume-slider'>
+              <span id='pause-volume-label'>Volume 100%</span>
+              <input id='pause-volume-slider' class='volume-slider' type='range' min='0' max='100' step='1' value='100'>
+            </label>
+          </div>
         </div>
 
         <div class='smartpos-top'>
