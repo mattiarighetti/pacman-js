@@ -146,9 +146,8 @@
 
   GameCoordinator.prototype.fitGameToPosScreen = function fitGameToPosScreen() {
     const posShell = document.querySelector('.pos-shell');
-    const screenFrame = document.querySelector('.pos-screen-frame');
     const screen = document.getElementById('pos-screen-inner');
-    if (!posShell || !screenFrame || !screen || !this.gameUi) {
+    if (!posShell || !screen || !this.gameUi) {
       return;
     }
 
@@ -163,33 +162,30 @@
     }
 
     const viewportMargin = window.innerWidth <= 600 ? 16 : 32;
+    const maxShellWidth = Math.max(window.innerWidth - viewportMargin, 320);
     const shellHeight = posShell.clientHeight;
-    const shellChromeHeight = posShell.clientHeight - screen.clientHeight;
-    const shellChromeWidth = posShell.clientWidth - screen.clientWidth;
+    const shellChromeHeight = Math.max(posShell.clientHeight - screen.clientHeight, 0);
+    const shellChromeWidth = Math.max(posShell.clientWidth - screen.clientWidth, 0);
     const targetScreenHeight = Math.max(shellHeight - shellChromeHeight, 0);
     const desiredScreenWidth = targetScreenHeight * (contentWidth / contentHeight);
-    const maxShellWidth = Math.max(window.innerWidth - viewportMargin, 0);
-    const desiredShellWidth = Math.min(
-      (desiredScreenWidth + shellChromeWidth) * 1.16,
-      maxShellWidth,
-    );
+    const desiredShellWidth = Math.min(desiredScreenWidth + shellChromeWidth, maxShellWidth);
 
-    posShell.style.width = `${desiredShellWidth}px`;
+    posShell.style.width = `${Math.max(desiredShellWidth, 320)}px`;
 
-    const availableWidth = screen.clientWidth;
-    const availableHeight = screen.clientHeight;
-    const fitPadding = 24;
-    const innerWidth = Math.max(availableWidth - (fitPadding * 2), 0);
-    const innerHeight = Math.max(availableHeight - (fitPadding * 2), 0);
+    const screenWidth = screen.clientWidth;
+    const screenHeight = screen.clientHeight;
+    const fitPadding = Math.max(Math.min(screenWidth, screenHeight) * 0.015, 4);
+    const innerWidth = Math.max(screenWidth - (fitPadding * 2), 0);
+    const innerHeight = Math.max(screenHeight - (fitPadding * 2), 0);
 
     const scale = Math.min(
       innerWidth / contentWidth,
       innerHeight / contentHeight,
-    ) * 0.94;
+    );
 
     this.gameUi.style.transform = `scale(${scale})`;
-    this.gameUi.style.left = `${(availableWidth - (contentWidth * scale)) / 2}px`;
-    this.gameUi.style.top = `${(availableHeight - (contentHeight * scale)) / 2}px`;
+    this.gameUi.style.left = `${(screenWidth - (contentWidth * scale)) / 2}px`;
+    this.gameUi.style.top = `${(screenHeight - (contentHeight * scale)) / 2}px`;
   };
 
   GameCoordinator.prototype.startAttractMode = function startAttractMode() {
