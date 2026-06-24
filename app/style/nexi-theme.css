@@ -12,26 +12,6 @@ body {
   padding: 1rem 0;
 }
 
-.brent-ward-logo,
-.header-buttons a {
-  display: none !important;
-}
-
-.header-buttons {
-  left: 50%;
-  padding: 1rem 1.25rem 0;
-  transform: translateX(-50%);
-  width: min(92vw, 42rem);
-}
-
-.header-buttons::before {
-  content: 'NEXI PAY-MAN';
-  color: #e8f1ff;
-  font-size: 0.9rem;
-  letter-spacing: 0.18em;
-  text-shadow: 0 0 12px rgba(27, 235, 194, 0.45);
-}
-
 .main-menu-container {
   background: rgba(4, 9, 24, 0.72);
   backdrop-filter: blur(6px);
@@ -144,6 +124,32 @@ body {
   padding: 1rem 1rem 0.9rem;
   position: relative;
   width: 100%;
+}
+
+.pos-controls {
+  display: flex;
+  gap: 0.35rem;
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+  z-index: 5;
+}
+
+.pos-controls button {
+  align-items: center;
+  background: rgba(15, 24, 49, 0.88);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.pos-controls .material-icons {
+  color: #fff;
+  font-size: 1.15rem;
 }
 
 .smartpos-top {
@@ -415,6 +421,11 @@ body {
     width: 100%;
   }
 
+  .pos-controls {
+    right: 0.55rem;
+    top: 0.55rem;
+  }
+
   .smartpos-top {
     min-height: 2.6rem;
   }
@@ -426,18 +437,15 @@ body {
 }
 
 @media only screen and (max-width: 600px) {
-  .header-buttons {
-    padding: 1rem 1rem 0;
-  }
-
-  .header-buttons::before {
-    font-size: 0.72rem;
-  }
-
   .pos-shell {
     max-height: calc(100vh - 1rem);
     min-height: calc(100vh - 1rem);
     width: 88vw;
+  }
+
+  .pos-controls button {
+    height: 1.7rem;
+    width: 1.7rem;
   }
 
   .smartpos-top {
