@@ -14,10 +14,16 @@ function styles() {
 function scripts() {
   return gulp
     .src([
-      'app/scripts/utilities/**/*.js',
-      'app/scripts/characters/**/*.js',
-      'app/scripts/pickups/**/*.js',
-      'app/scripts/core/**/*.js',
+      'app/scripts/utilities/characterUtil.js',
+      'app/scripts/utilities/leaderboard.js',
+      'app/scripts/utilities/nexiTheme.js',
+      'app/scripts/utilities/soundManager.js',
+      'app/scripts/utilities/timer.js',
+      'app/scripts/characters/ghost.js',
+      'app/scripts/characters/pacman.js',
+      'app/scripts/pickups/pickup.js',
+      'app/scripts/core/gameCoordinator.js',
+      'app/scripts/core/gameEngine.js',
       'app/scripts/nexi-mode.js',
     ])
     .pipe(removeCode({ production: true }))

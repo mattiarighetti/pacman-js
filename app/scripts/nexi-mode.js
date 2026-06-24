@@ -148,7 +148,6 @@
       return;
     }
 
-    const viewportMargin = window.innerWidth <= 600 ? 16 : 32;
     posShell.style.width = '';
 
     const screenWidth = screen.clientWidth;
