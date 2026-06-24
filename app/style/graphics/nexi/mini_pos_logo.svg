@@ -1,0 +1,16 @@
+<svg width="620" height="150" viewBox="0 0 620 150" fill="none" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+<rect x="6" y="6" width="608" height="138" rx="18" fill="#07103A"/>
+<rect x="16" y="16" width="588" height="118" rx="12" fill="#12284B"/>
+<rect x="42" y="26" width="126" height="92" fill="#E7ECF4"/>
+<rect x="54" y="38" width="102" height="42" fill="#07103A"/>
+<rect x="66" y="48" width="72" height="8" fill="#1BEBC2"/>
+<rect x="66" y="64" width="54" height="8" fill="#9EF6E5"/>
+<rect x="68" y="96" width="12" height="12" fill="#1B73FF"/>
+<rect x="98" y="96" width="12" height="12" fill="#1B73FF"/>
+<rect x="128" y="96" width="12" height="12" fill="#1B73FF"/>
+<rect x="172" y="60" width="46" height="46" fill="#FFD400"/>
+<rect x="190" y="72" width="24" height="18" fill="#1B73FF"/>
+<text x="246" y="66" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">NEXI</text>
+<text x="246" y="108" fill="#1BEBC2" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">PAY-MAN ARENA</text>
+<rect x="242" y="118" width="276" height="6" fill="#FFD400"/>
+</svg>

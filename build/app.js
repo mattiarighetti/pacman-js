@@ -2445,12 +2445,6 @@ class GameCoordinator {
         `${imgBase}characters/pacman/mini_pos_left.svg`,
         `${imgBase}characters/pacman/mini_pos_right.svg`,
         `${imgBase}characters/pacman/mini_pos_up.svg`,
-        `${imgBase}characters/pacman/pacman_death.svg`,
-        `${imgBase}characters/pacman/pacman_error.svg`,
-        `${imgBase}characters/pacman/pacman_down.svg`,
-        `${imgBase}characters/pacman/pacman_left.svg`,
-        `${imgBase}characters/pacman/pacman_right.svg`,
-        `${imgBase}characters/pacman/pacman_up.svg`,
 
         // Cash enemies
         `${imgBase}characters/ghosts/cash/cash_down.svg`,
@@ -2548,7 +2542,7 @@ class GameCoordinator {
         `${imgBase}maze/maze_blue.svg`,
 
         // Misc
-        'app/style/graphics/extra_life.svg',
+        'app/style/graphics/nexi/mini_pos_life.svg',
       ];
 
       const audioBase = 'app/style/audio/';
@@ -2943,7 +2937,7 @@ class GameCoordinator {
 
     for (let i = 0; i < this.lives; i += 1) {
       const extraLifePic = document.createElement('img');
-      extraLifePic.setAttribute('src', 'app/style/graphics/extra_life.svg');
+      extraLifePic.setAttribute('src', 'app/style/graphics/nexi/mini_pos_life.svg');
       extraLifePic.style.height = `${this.scaledTileSize * 2}px`;
       this.extraLivesDisplay.appendChild(extraLifePic);
     }
