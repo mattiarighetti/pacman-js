@@ -89,6 +89,13 @@ class GameCoordinator {
       8: 5000,
     };
 
+    this.popMessageMilestones = [
+      { points: 100, message: 'Tap streak!', variant: 'streak' },
+      { points: 500, message: 'Cashback ioSi!', variant: 'cashback' },
+      { points: 1000, message: 'Authorization approved', variant: 'approved' },
+      { points: 2500, message: 'ioSi level up', variant: 'level-up' },
+    ];
+
     this.mazeArray.forEach((row, rowIndex) => {
       this.mazeArray[rowIndex] = row[0].split('');
     });
@@ -256,6 +263,7 @@ class GameCoordinator {
         // Dots
         `${imgBase}pickups/pacdot.svg`,
         `${imgBase}pickups/powerPellet.svg`,
+        `${imgBase}pickups/contactless.svg`,
 
         // Fruit
         `${imgBase}pickups/apple.svg`,
@@ -391,8 +399,22 @@ class GameCoordinator {
    * Resets gameCoordinator values to their default states
    */
   reset() {
+    if (this.pacman) {
+      this.deactivateContactlessMode();
+    }
+
+    this.removeTimer({ detail: { timer: this.contactlessSpawnTimer } });
+    this.contactlessSpawnTimer = undefined;
+
+    if (this.contactlessPickup) {
+      this.hideContactlessPickup();
+    }
+
+    this.clearPopMessage();
+
     this.activeTimers = [];
     this.points = 0;
+    this.shownPopMessageMilestones = [];
     this.level = 1;
     this.lives = 2;
     this.extraLifeGiven = false;
@@ -455,6 +477,15 @@ class GameCoordinator {
         this.mazeDiv,
         100,
       );
+      this.contactlessPickup = new Pickup(
+        'contactless',
+        this.scaledTileSize,
+        13.5,
+        17,
+        this.pacman,
+        this.mazeDiv,
+        0,
+      );
     }
 
     this.entityList = [
@@ -464,6 +495,7 @@ class GameCoordinator {
       this.inky,
       this.clyde,
       this.fruit,
+      this.contactlessPickup,
     ];
 
     this.ghosts = [this.blinky, this.pinky, this.inky, this.clyde];
@@ -481,7 +513,7 @@ class GameCoordinator {
         ghost.reset(true);
       });
       this.pickups.forEach((pickup) => {
-        if (pickup.type !== 'fruit') {
+        if (!['contactless', 'fruit'].includes(pickup.type)) {
           this.remainingDots += 1;
           pickup.reset();
           this.entityList.push(pickup);
@@ -518,7 +550,7 @@ class GameCoordinator {
    * @param {Array} entityList - List of entities to be used throughout the game
    */
   drawMaze(mazeArray, entityList) {
-    this.pickups = [this.fruit];
+    this.pickups = [this.fruit, this.contactlessPickup];
 
     this.mazeDiv.style.height = `${this.scaledTileSize * 31}px`;
     this.mazeDiv.style.width = `${this.scaledTileSize * 28}px`;
@@ -615,6 +647,7 @@ class GameCoordinator {
 
       this.idleGhosts = [this.pinky, this.inky, this.clyde];
       this.releaseGhost();
+      this.startContactlessSpawnCycle();
     }, duration);
   }
 
@@ -703,6 +736,7 @@ class GameCoordinator {
     window.addEventListener('deathSequence', this.deathSequence.bind(this));
     window.addEventListener('dotEaten', this.dotEaten.bind(this));
     window.addEventListener('powerUp', this.powerUp.bind(this));
+    window.addEventListener('contactlessMode', this.contactlessMode.bind(this));
     window.addEventListener('eatGhost', this.eatGhost.bind(this));
     window.addEventListener('restoreGhost', this.restoreGhost.bind(this));
     window.addEventListener('addTimer', this.addTimer.bind(this));
@@ -828,8 +862,11 @@ class GameCoordinator {
    * @param {({ detail: { points: Number }})} e - Contains a quantity of points to add
    */
   awardPoints(e) {
+    const previousPoints = this.points;
     this.points += e.detail.points;
     this.pointsDisplay.innerText = this.points;
+    this.displayPointMilestoneMessages(previousPoints, this.points);
+
     if (this.points > (this.highScore || 0)) {
       this.highScore = this.points;
       this.highScoreDisplay.innerText = this.points;
@@ -874,6 +911,11 @@ class GameCoordinator {
     this.removeTimer({ detail: { timer: this.ghostCycleTimer } });
     this.removeTimer({ detail: { timer: this.endIdleTimer } });
     this.removeTimer({ detail: { timer: this.ghostFlashTimer } });
+    this.removeTimer({ detail: { timer: this.contactlessSpawnTimer } });
+    this.contactlessSpawnTimer = undefined;
+    this.hideContactlessPickup();
+    this.deactivateContactlessMode();
+    this.clearPopMessage();
 
     this.allowKeyPresses = false;
     this.pacman.moving = false;
@@ -903,6 +945,7 @@ class GameCoordinator {
               ghost.reset();
             });
             this.fruit.hideFruit();
+            this.contactlessPickup.hideContactless();
 
             this.startGameplay();
           }, 500);
@@ -1026,6 +1069,11 @@ class GameCoordinator {
     this.removeTimer({ detail: { timer: this.ghostCycleTimer } });
     this.removeTimer({ detail: { timer: this.endIdleTimer } });
     this.removeTimer({ detail: { timer: this.ghostFlashTimer } });
+    this.removeTimer({ detail: { timer: this.contactlessSpawnTimer } });
+    this.contactlessSpawnTimer = undefined;
+    this.hideContactlessPickup();
+    this.deactivateContactlessMode();
+    this.clearPopMessage();
 
     const imgBase = 'app/style//graphics/spriteSheets/maze/';
 
@@ -1063,7 +1111,7 @@ class GameCoordinator {
                       }
                       if (
                         entityRef instanceof Pickup
-                        && entityRef.type !== 'fruit'
+                        && !['contactless', 'fruit'].includes(entityRef.type)
                       ) {
                         this.remainingDots += 1;
                       }
@@ -1131,6 +1179,94 @@ class GameCoordinator {
     this.ghostFlashTimer = new Timer(() => {
       this.flashGhosts(0, 9);
     }, powerDuration);
+  }
+
+  /**
+   * Starts the Contactless pickup spawn timer
+   */
+  startContactlessSpawnCycle() {
+    this.removeTimer({ detail: { timer: this.contactlessSpawnTimer } });
+    this.contactlessSpawnTimer = new Timer(() => {
+      this.createContactlessPickup();
+    }, 20000);
+  }
+
+  /**
+   * Shows the temporary Contactless pickup and schedules its next spawn
+   */
+  createContactlessPickup() {
+    const { column, row } = this.determineContactlessSpawnPosition();
+
+    this.hideContactlessPickup();
+    this.contactlessPickup.showContactless(column, row, this.scaledTileSize);
+    this.contactlessHideTimer = new Timer(() => {
+      this.hideContactlessPickup();
+    }, 10000);
+    this.startContactlessSpawnCycle();
+  }
+
+  /**
+   * Hides the temporary Contactless pickup
+   */
+  hideContactlessPickup() {
+    this.removeTimer({ detail: { timer: this.contactlessHideTimer } });
+    this.contactlessHideTimer = undefined;
+    this.contactlessPickup.hideContactless();
+  }
+
+  /**
+   * Chooses a valid dot tile for the Contactless pickup spawn
+   * @returns {({ column: number, row: number })}
+   */
+  determineContactlessSpawnPosition() {
+    const positions = [];
+
+    this.mazeArray.forEach((row, rowIndex) => {
+      row.forEach((block, columnIndex) => {
+        if (block === 'o') {
+          positions.push({
+            column: columnIndex,
+            row: rowIndex,
+          });
+        }
+      });
+    });
+
+    if (positions.length === 0) {
+      throw new Error('No contactless spawn positions available.');
+    }
+
+    return positions[Math.floor(Math.random() * positions.length)];
+  }
+
+  /**
+   * Activates Contactless Mode after the temporary pickup is collected
+   */
+  contactlessMode() {
+    this.hideContactlessPickup();
+    this.activateContactlessMode();
+    this.displayPopMessage('Contactless boost', 'contactless');
+  }
+
+  /**
+   * Enables the temporary Contactless dot collection radius
+   */
+  activateContactlessMode() {
+    this.removeTimer({ detail: { timer: this.contactlessTimer } });
+    this.pacman.activateContactlessMode(this.scaledTileSize * 3);
+    this.contactlessTimer = new Timer(() => {
+      this.pacman.deactivateContactlessMode();
+      this.contactlessTimer = undefined;
+    }, 5000);
+  }
+
+  /**
+   * Disables Contactless Mode and clears any pending Contactless timer
+   */
+  deactivateContactlessMode() {
+    this.removeTimer({ detail: { timer: this.contactlessTimer } });
+    this.contactlessTimer = undefined;
+    this.pacman.deactivateContactlessMode();
   }
 
   /**
@@ -1214,6 +1350,69 @@ class GameCoordinator {
         : this.determineSiren(this.remainingDots);
       this.soundManager.setAmbience(sound);
     }
+  }
+
+  /**
+   * Displays a pop message if the latest score crossed a new milestone
+   * @param {Number} previousPoints
+   * @param {Number} currentPoints
+   */
+  displayPointMilestoneMessages(previousPoints, currentPoints) {
+    const crossedMilestones = this.popMessageMilestones.filter(
+      (milestone) => (
+        previousPoints < milestone.points
+        && currentPoints >= milestone.points
+        && !this.shownPopMessageMilestones.includes(milestone.points)
+      ),
+    );
+
+    if (crossedMilestones.length === 0) {
+      return;
+    }
+
+    crossedMilestones.forEach((milestone) => {
+      this.shownPopMessageMilestones.push(milestone.points);
+    });
+
+    const latestMilestone = crossedMilestones[crossedMilestones.length - 1];
+    this.displayPopMessage(latestMilestone.message, latestMilestone.variant);
+  }
+
+  /**
+   * Removes the current pop message and any pending removal timer
+   */
+  clearPopMessage() {
+    this.removeTimer({ detail: { timer: this.popMessageTimer } });
+    this.popMessageTimer = undefined;
+
+    if (this.popMessage) {
+      this.mazeDiv.removeChild(this.popMessage);
+      this.popMessage = undefined;
+    }
+  }
+
+  /**
+   * Displays a temporary arcade pop message over the maze
+   * @param {String} message
+   * @param {String} variant
+   */
+  displayPopMessage(message, variant) {
+    const popMessage = document.createElement('div');
+
+    this.clearPopMessage();
+
+    popMessage.classList.add('pop-message', `pop-message-${variant}`);
+    popMessage.innerText = message;
+    popMessage.style.left = `${this.scaledTileSize * 14}px`;
+    popMessage.style.top = `${this.scaledTileSize * 9}px`;
+
+    this.mazeDiv.appendChild(popMessage);
+    this.popMessage = popMessage;
+    this.popMessageTimer = new Timer(() => {
+      if (this.popMessage === popMessage) {
+        this.clearPopMessage();
+      }
+    }, 2200);
   }
 
   /**

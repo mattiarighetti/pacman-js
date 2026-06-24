@@ -399,10 +399,131 @@ body {
   position: absolute;
   width: 100%;
 }
+
+.pop-message {
+  animation: pop-message-rise 2.2s ease-out forwards;
+  background: rgba(0, 0, 0, 0.72);
+  border: 0.1em solid rgba(247, 254, 255, 0.38);
+  box-sizing: border-box;
+  color: #fff;
+  font-size: 1em;
+  line-height: 1.45;
+  max-width: 90%;
+  padding: 0.45em 0.65em;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  text-shadow: -0.12em 0 #000, 0 0.12em #000, 0.12em 0 #000, 0 -0.12em #000, 0 0 0.45em #2121ff;
+  transform: translateX(-50%);
+  user-select: none;
+  width: max-content;
+  z-index: 4;
+}
+
+.pop-message-streak {
+  color: #ffdf00;
+}
+
+.pop-message-cashback {
+  color: #25d7ff;
+}
+
+.pop-message-approved {
+  color: #7cffcf;
+}
+
+.pop-message-level-up {
+  color: #f7feff;
+}
+
+.pop-message-contactless {
+  color: #8ef3ff;
+}
+
+@keyframes pop-message-rise {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0.4em) scale(0.9);
+  }
+  18% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  72% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-0.2em) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-1em) scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop-message {
+    animation: pop-message-fade 2.2s linear forwards;
+  }
+  @keyframes pop-message-fade {
+    0% {
+      opacity: 0;
+    }
+    20% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
 .pacman {
   margin: 0;
   position: absolute;
   z-index: 1;
+}
+
+.pacman.contactless-mode {
+  z-index: 3;
+}
+
+.pacman.contactless-mode::before {
+  animation: contactless-glow 1s ease-out infinite;
+  background: radial-gradient(circle, rgba(221, 252, 255, 0.22) 0%, rgba(105, 232, 255, 0.14) 45%, rgba(105, 232, 255, 0.08) 62%, rgba(105, 232, 255, 0) 74%);
+  border: 0.08em solid rgba(189, 248, 255, 0.32);
+  border-radius: 50%;
+  box-shadow: 0 0 0.6em rgba(37, 215, 255, 0.22);
+  box-sizing: border-box;
+  content: "";
+  height: 300%;
+  left: -100%;
+  pointer-events: none;
+  position: absolute;
+  top: -100%;
+  transform-origin: center;
+  width: 300%;
+  z-index: 0;
+}
+
+@keyframes contactless-glow {
+  0% {
+    opacity: 0.42;
+    transform: scale(0.98);
+  }
+  60% {
+    opacity: 0.68;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 0.42;
+    transform: scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pacman.contactless-mode::before {
+    animation: none;
+    opacity: 0.55;
+  }
 }
 .power-pellet {
   animation: blink 0.3s infinite;

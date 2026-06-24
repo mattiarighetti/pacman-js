@@ -3,3 +3,55 @@
   position: absolute;
   z-index: 1;
 }
+
+.pacman.contactless-mode {
+  z-index: 3;
+}
+
+.pacman.contactless-mode::before {
+  animation: contactless-glow 1s ease-out infinite;
+  background: radial-gradient(
+    circle,
+    rgba(221, 252, 255, .22) 0%,
+    rgba(105, 232, 255, .14) 45%,
+    rgba(105, 232, 255, .08) 62%,
+    rgba(105, 232, 255, 0) 74%
+  );
+  border: .08em solid rgba(189, 248, 255, .32);
+  border-radius: 50%;
+  box-shadow: 0 0 .6em rgba(37, 215, 255, .22);
+  box-sizing: border-box;
+  content: '';
+  height: 300%;
+  left: -100%;
+  pointer-events: none;
+  position: absolute;
+  top: -100%;
+  transform-origin: center;
+  width: 300%;
+  z-index: 0;
+}
+
+@keyframes contactless-glow {
+  0% {
+    opacity: .42;
+    transform: scale(.98);
+  }
+
+  60% {
+    opacity: .68;
+    transform: scale(1.04);
+  }
+
+  100% {
+    opacity: .42;
+    transform: scale(.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pacman.contactless-mode::before {
+    animation: none;
+    opacity: .55;
+  }
+}

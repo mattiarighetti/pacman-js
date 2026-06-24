@@ -10,6 +10,10 @@ let pacman;
 beforeEach(() => {
   global.document = {
     getElementById: () => ({
+      classList: {
+        add: () => {},
+        remove: () => {},
+      },
       style: {},
     }),
   };
@@ -87,6 +91,37 @@ describe('pacman', () => {
       assert.strictEqual(pacman.msSinceLastSprite, 0);
       assert.strictEqual(pacman.spriteFrames, 4);
       assert.strictEqual(pacman.backgroundOffsetPixels, 0);
+    });
+  });
+
+  describe('contactless mode', () => {
+    it('sets the contactless radius and class', () => {
+      pacman.animationTarget.classList.add = sinon.fake();
+
+      pacman.activateContactlessMode(16);
+      assert.strictEqual(pacman.contactlessRadius, 16);
+      assert(pacman.animationTarget.classList.add.calledWith('contactless-mode'));
+    });
+
+    it('clears the contactless radius and class', () => {
+      pacman.contactlessRadius = 16;
+      pacman.animationTarget.classList.remove = sinon.fake();
+
+      pacman.deactivateContactlessMode();
+      assert.strictEqual(pacman.contactlessRadius, 0);
+      assert(pacman.animationTarget.classList.remove.calledWith('contactless-mode'));
+    });
+
+    it('updates state when classList is unavailable', () => {
+      pacman.animationTarget = {
+        style: {},
+      };
+
+      pacman.activateContactlessMode(16);
+      assert.strictEqual(pacman.contactlessRadius, 16);
+
+      pacman.deactivateContactlessMode();
+      assert.strictEqual(pacman.contactlessRadius, 0);
     });
   });
 

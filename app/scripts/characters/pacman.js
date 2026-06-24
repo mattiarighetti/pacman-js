@@ -15,6 +15,7 @@ class Pacman {
   reset() {
     this.setMovementStats(this.scaledTileSize);
     this.setSpriteAnimationStats();
+    this.deactivateContactlessMode();
     this.setStyleMeasurements(this.scaledTileSize, this.spriteFrames);
     this.setDefaultPosition(this.scaledTileSize);
     this.setSpriteSheet(this.direction);
@@ -46,6 +47,29 @@ class Pacman {
     this.spriteFrames = 4;
     this.backgroundOffsetPixels = 0;
     this.animationTarget.style.backgroundPosition = '0px 0px';
+  }
+
+  /**
+   * Enables Contactless Mode for automatically collecting nearby pacdots
+   * @param {number} radius - CSS pixel radius for the Contactless effect
+   */
+  activateContactlessMode(radius) {
+    this.contactlessRadius = radius;
+
+    if (this.animationTarget.classList) {
+      this.animationTarget.classList.add('contactless-mode');
+    }
+  }
+
+  /**
+   * Disables Contactless Mode and removes its visual treatment
+   */
+  deactivateContactlessMode() {
+    this.contactlessRadius = 0;
+
+    if (this.animationTarget.classList) {
+      this.animationTarget.classList.remove('contactless-mode');
+    }
   }
 
   /**

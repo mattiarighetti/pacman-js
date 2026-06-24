@@ -13,6 +13,10 @@ let clock;
 describe('gameCoordinator', () => {
   beforeEach(() => {
     global.Pacman = class {
+      activateContactlessMode() {}
+
+      deactivateContactlessMode() {}
+
       reset() {}
     };
     global.CharacterUtil = class {};
@@ -30,7 +34,11 @@ describe('gameCoordinator', () => {
         this.type = type;
       }
 
+      hideContactless() {}
+
       reset() {}
+
+      showContactless() {}
     };
     global.Timer = class {
       constructor(callback, delay) {
@@ -257,6 +265,7 @@ describe('gameCoordinator', () => {
       comp.reset();
       assert.deepEqual(comp.activeTimers, []);
       assert.strictEqual(comp.points, 0);
+      assert.deepEqual(comp.shownPopMessageMilestones, []);
       assert.strictEqual(comp.level, 1);
       assert.strictEqual(comp.lives, 2);
       assert.strictEqual(comp.extraLifeGiven, false);
@@ -270,7 +279,7 @@ describe('gameCoordinator', () => {
         comp.highScore,
         global.localStorage.getItem('highScore'),
       );
-      assert.strictEqual(comp.entityList.length, 6);
+      assert.strictEqual(comp.entityList.length, 7);
       assert.strictEqual(comp.ghosts.length, 4);
       assert.deepEqual(comp.scaredGhosts, []);
       assert.strictEqual(comp.eyeGhosts, 0);
@@ -503,6 +512,7 @@ describe('gameCoordinator', () => {
       assert(global.window.addEventListener.calledWith('deathSequence'));
       assert(global.window.addEventListener.calledWith('dotEaten'));
       assert(global.window.addEventListener.calledWith('powerUp'));
+      assert(global.window.addEventListener.calledWith('contactlessMode'));
       assert(global.window.addEventListener.calledWith('eatGhost'));
       assert(global.window.addEventListener.calledWith('addTimer'));
       assert(global.window.addEventListener.calledWith('removeTimer'));
@@ -818,6 +828,40 @@ describe('gameCoordinator', () => {
     });
   });
 
+  describe('displayPointMilestoneMessages', () => {
+    beforeEach(() => {
+      comp.displayPopMessage = sinon.fake();
+    });
+
+    it('shows a pop message when a point milestone is crossed', () => {
+      comp.displayPointMilestoneMessages(90, 100);
+      assert.deepEqual(comp.shownPopMessageMilestones, [100]);
+      assert(comp.displayPopMessage.calledWith('Tap streak!', 'streak'));
+    });
+
+    it('shows the latest milestone when points jump across multiple thresholds', () => {
+      comp.displayPointMilestoneMessages(90, 600);
+      assert.deepEqual(comp.shownPopMessageMilestones, [100, 500]);
+      assert(comp.displayPopMessage.calledOnceWith(
+        'Cashback ioSi!',
+        'cashback',
+      ));
+    });
+
+    it('does not show the same milestone twice', () => {
+      comp.shownPopMessageMilestones = [100];
+
+      comp.displayPointMilestoneMessages(90, 120);
+      assert(!comp.displayPopMessage.called);
+    });
+
+    it('does nothing before reaching a milestone', () => {
+      comp.displayPointMilestoneMessages(50, 90);
+      assert.deepEqual(comp.shownPopMessageMilestones, []);
+      assert(!comp.displayPopMessage.called);
+    });
+  });
+
   describe('deathSequence', () => {
     beforeEach(() => {
       comp.allowKeyPresses = true;
@@ -969,6 +1013,106 @@ describe('gameCoordinator', () => {
 
       comp.createFruit();
       assert(comp.fruit.showFruit.calledWith(5000));
+    });
+  });
+
+  describe('startContactlessSpawnCycle', () => {
+    it('creates a Contactless pickup after twenty seconds', () => {
+      comp.removeTimer = sinon.fake();
+      comp.createContactlessPickup = sinon.fake();
+
+      comp.startContactlessSpawnCycle();
+      assert(comp.removeTimer.called);
+
+      clock.tick(20000);
+      assert(comp.createContactlessPickup.called);
+    });
+  });
+
+  describe('createContactlessPickup', () => {
+    it('shows the Contactless pickup and schedules hide and next spawn', () => {
+      comp.determineContactlessSpawnPosition = sinon.fake.returns({
+        column: 5,
+        row: 6,
+      });
+      comp.hideContactlessPickup = sinon.fake();
+      comp.startContactlessSpawnCycle = sinon.fake();
+      comp.contactlessPickup.showContactless = sinon.fake();
+
+      comp.createContactlessPickup();
+      assert(comp.hideContactlessPickup.called);
+      assert(comp.contactlessPickup.showContactless.calledWith(
+        5,
+        6,
+        comp.scaledTileSize,
+      ));
+      assert(comp.startContactlessSpawnCycle.called);
+
+      clock.tick(10000);
+      assert.strictEqual(comp.hideContactlessPickup.callCount, 2);
+    });
+  });
+
+  describe('hideContactlessPickup', () => {
+    it('removes the hide timer and hides the pickup', () => {
+      comp.removeTimer = sinon.fake();
+      comp.contactlessPickup.hideContactless = sinon.fake();
+      comp.contactlessHideTimer = { timerId: 123 };
+
+      comp.hideContactlessPickup();
+      assert.strictEqual(comp.contactlessHideTimer, undefined);
+      assert(comp.removeTimer.calledWith({
+        detail: {
+          timer: { timerId: 123 },
+        },
+      }));
+      assert(comp.contactlessPickup.hideContactless.called);
+    });
+  });
+
+  describe('determineContactlessSpawnPosition', () => {
+    afterEach(() => {
+      if (Math.random.restore) {
+        Math.random.restore();
+      }
+    });
+
+    it('chooses a valid pacdot tile', () => {
+      sinon.stub(Math, 'random').returns(0);
+      comp.mazeArray = mazeArray;
+
+      assert.deepEqual(comp.determineContactlessSpawnPosition(), {
+        column: 1,
+        row: 1,
+      });
+    });
+
+    it('throws if no pacdot tile is available', () => {
+      comp.mazeArray = [
+        ['X', 'X'],
+        ['X', ' '],
+      ];
+
+      assert.throws(
+        () => comp.determineContactlessSpawnPosition(),
+        /No contactless spawn positions available/,
+      );
+    });
+  });
+
+  describe('contactlessMode', () => {
+    it('hides the pickup and activates Contactless Mode', () => {
+      comp.hideContactlessPickup = sinon.fake();
+      comp.activateContactlessMode = sinon.fake();
+      comp.displayPopMessage = sinon.fake();
+
+      comp.contactlessMode();
+      assert(comp.hideContactlessPickup.called);
+      assert(comp.activateContactlessMode.called);
+      assert(comp.displayPopMessage.calledWith(
+        'Contactless boost',
+        'contactless',
+      ));
     });
   });
 
@@ -1125,6 +1269,8 @@ describe('gameCoordinator', () => {
   describe('powerUp', () => {
     beforeEach(() => {
       comp.removeTimer = sinon.fake();
+      comp.pacman.activateContactlessMode = sinon.fake();
+      comp.pacman.deactivateContactlessMode = sinon.fake();
       comp.ghosts = [
         { becomeScared: sinon.fake(), mode: 'eyes' },
         { becomeScared: sinon.fake(), mode: 'chase' },
@@ -1159,6 +1305,58 @@ describe('gameCoordinator', () => {
       comp.remainingDots = 1;
       comp.powerUp();
       assert(comp.soundManager.setAmbience.calledWith('power_up'));
+    });
+
+    it('does not activate Contactless Mode', () => {
+      comp.powerUp();
+      assert(!comp.pacman.activateContactlessMode.called);
+    });
+  });
+
+  describe('activateContactlessMode', () => {
+    beforeEach(() => {
+      comp.removeTimer = sinon.fake();
+      comp.pacman.activateContactlessMode = sinon.fake();
+      comp.pacman.deactivateContactlessMode = sinon.fake();
+    });
+
+    it('activates Contactless Mode', () => {
+      comp.activateContactlessMode();
+      assert(comp.pacman.activateContactlessMode.calledWith(comp.scaledTileSize * 3));
+    });
+
+    it('deactivates Contactless Mode after five seconds', () => {
+      comp.activateContactlessMode();
+      clock.tick(5000);
+      assert(comp.pacman.deactivateContactlessMode.called);
+    });
+
+    it('cancels an existing Contactless timer before starting a new one', () => {
+      comp.contactlessTimer = { timerId: 123 };
+
+      comp.activateContactlessMode();
+      assert(comp.removeTimer.calledWith({
+        detail: {
+          timer: { timerId: 123 },
+        },
+      }));
+    });
+  });
+
+  describe('deactivateContactlessMode', () => {
+    it('removes the Contactless timer and deactivates Pacman', () => {
+      comp.removeTimer = sinon.fake();
+      comp.pacman.deactivateContactlessMode = sinon.fake();
+      comp.contactlessTimer = { timerId: 123 };
+
+      comp.deactivateContactlessMode();
+      assert.strictEqual(comp.contactlessTimer, undefined);
+      assert(comp.removeTimer.calledWith({
+        detail: {
+          timer: { timerId: 123 },
+        },
+      }));
+      assert(comp.pacman.deactivateContactlessMode.called);
     });
   });
 
@@ -1260,6 +1458,72 @@ describe('gameCoordinator', () => {
 
       clock.tick(1000);
       assert(comp.mazeDiv.removeChild.called);
+    });
+  });
+
+  describe('displayPopMessage', () => {
+    it('creates a temporary pop message and removes it with a set delay', () => {
+      const popMessage = {
+        classList: {
+          add: sinon.fake(),
+        },
+        style: {},
+      };
+      comp.mazeDiv = {
+        appendChild: sinon.fake(),
+        removeChild: sinon.fake(),
+      };
+      global.document.createElement = sinon.fake.returns(popMessage);
+
+      comp.displayPopMessage('Tap streak!', 'streak');
+      assert(popMessage.classList.add.calledWith(
+        'pop-message',
+        'pop-message-streak',
+      ));
+      assert.strictEqual(popMessage.innerText, 'Tap streak!');
+      assert.strictEqual(popMessage.style.left, `${comp.scaledTileSize * 14}px`);
+      assert.strictEqual(popMessage.style.top, `${comp.scaledTileSize * 9}px`);
+      assert(comp.mazeDiv.appendChild.calledWith(popMessage));
+
+      clock.tick(2200);
+      assert(comp.mazeDiv.removeChild.calledWith(popMessage));
+      assert.strictEqual(comp.popMessage, undefined);
+      assert.strictEqual(comp.popMessageTimer, undefined);
+    });
+
+    it('does not let an old timer remove a newer pop message', () => {
+      const firstPopMessage = {
+        classList: {
+          add: sinon.fake(),
+        },
+        style: {},
+      };
+      const secondPopMessage = {
+        classList: {
+          add: sinon.fake(),
+        },
+        style: {},
+      };
+      comp.mazeDiv = {
+        appendChild: sinon.fake(),
+        removeChild: sinon.fake(),
+      };
+      global.document.createElement = sinon.stub();
+      global.document.createElement.onFirstCall().returns(firstPopMessage);
+      global.document.createElement.onSecondCall().returns(secondPopMessage);
+
+      comp.displayPopMessage('Tap streak!', 'streak');
+      clock.tick(500);
+      comp.displayPopMessage('Cashback ioSi!', 'cashback');
+      assert(comp.mazeDiv.removeChild.calledOnceWith(firstPopMessage));
+
+      clock.tick(1700);
+      assert.strictEqual(comp.popMessage, secondPopMessage);
+      assert(comp.mazeDiv.removeChild.calledOnce);
+
+      clock.tick(500);
+      assert(comp.mazeDiv.removeChild.calledTwice);
+      assert(comp.mazeDiv.removeChild.calledWith(secondPopMessage));
     });
   });
 

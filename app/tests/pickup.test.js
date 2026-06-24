@@ -43,6 +43,10 @@ describe('pickup', () => {
       pickup.type = 'fruit';
       pickup.reset();
       assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
+
+      pickup.type = 'contactless';
+      pickup.reset();
+      assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
     });
   });
 
@@ -95,6 +99,26 @@ describe('pickup', () => {
       assert.deepEqual(pickup.animationTarget.style, {
         backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/'
          + 'cherry.svg)',
+        backgroundSize: '16px',
+        height: '16px',
+        left: '4px',
+        position: 'absolute',
+        top: '4px',
+        width: '16px',
+        visibility: 'hidden',
+      });
+    });
+
+    it('sets measurements for contactless pickups', () => {
+      pickup.type = 'contactless';
+      pickup.setStyleMeasurements('contactless', 8, 1, 1);
+
+      assert.strictEqual(pickup.size, 16);
+      assert.strictEqual(pickup.x, 4);
+      assert.strictEqual(pickup.y, 4);
+      assert.deepEqual(pickup.animationTarget.style, {
+        backgroundImage: 'url(app/style/graphics/spriteSheets/pickups/'
+         + 'contactless.svg)',
         backgroundSize: '16px',
         height: '16px',
         left: '4px',
@@ -166,6 +190,9 @@ describe('pickup', () => {
 
       const powerPellet = pickup.determineImage('powerPellet', undefined);
       assert.strictEqual(powerPellet, `${baseUrl}powerPellet.svg)`);
+
+      const contactless = pickup.determineImage('contactless', undefined);
+      assert.strictEqual(contactless, `${baseUrl}contactless.svg)`);
     });
   });
 
@@ -188,6 +215,36 @@ describe('pickup', () => {
       pickup.animationTarget.style.visibility = 'visible';
 
       pickup.hideFruit();
+      assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
+    });
+  });
+
+  describe('showContactless', () => {
+    it('sets position, image, and visibility', () => {
+      pickup.type = 'contactless';
+      pickup.animationTarget.style.visibility = 'hidden';
+
+      pickup.showContactless(5, 6, 8);
+      assert.strictEqual(pickup.size, 16);
+      assert.strictEqual(pickup.x, 36);
+      assert.strictEqual(pickup.y, 44);
+      assert.deepEqual(pickup.center, {
+        x: 40,
+        y: 48,
+      });
+      assert.strictEqual(
+        pickup.animationTarget.style.backgroundImage,
+        'url(app/style/graphics/spriteSheets/pickups/contactless.svg)',
+      );
+      assert.strictEqual(pickup.animationTarget.style.visibility, 'visible');
+    });
+  });
+
+  describe('hideContactless', () => {
+    it('sets the visibility to HIDDEN', () => {
+      pickup.animationTarget.style.visibility = 'visible';
+
+      pickup.hideContactless();
       assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
     });
   });
@@ -257,6 +314,46 @@ describe('pickup', () => {
     });
   });
 
+  describe('shouldCollectContactless', () => {
+    beforeEach(() => {
+      pickup.center = { x: 18, y: 18 };
+      pacman.contactlessRadius = 12;
+    });
+
+    it('returns TRUE for visible pacdots inside the contactless radius', () => {
+      pickup.animationTarget.style.visibility = 'visible';
+
+      assert(pickup.shouldCollectContactless());
+    });
+
+    it('returns FALSE for pacdots outside the contactless radius', () => {
+      pickup.center = { x: 30, y: 30 };
+      pickup.animationTarget.style.visibility = 'visible';
+
+      assert(!pickup.shouldCollectContactless());
+    });
+
+    it('returns FALSE when Contactless Mode is inactive', () => {
+      pacman.contactlessRadius = 0;
+      pickup.animationTarget.style.visibility = 'visible';
+
+      assert(!pickup.shouldCollectContactless());
+    });
+
+    it('returns FALSE when the pickup is hidden', () => {
+      pickup.animationTarget.style.visibility = 'hidden';
+
+      assert(!pickup.shouldCollectContactless());
+    });
+
+    it('returns FALSE for non-pacdot pickups', () => {
+      pickup.type = 'powerPellet';
+      pickup.animationTarget.style.visibility = 'visible';
+
+      assert(!pickup.shouldCollectContactless());
+    });
+  });
+
   describe('update', () => {
     beforeEach(() => {
       global.window = {
@@ -290,6 +387,7 @@ describe('pickup', () => {
         new CustomEvent('awardPoints', {
           detail: {
             points: pickup.points,
+            type: pickup.type,
           },
         }),
       ));
@@ -314,17 +412,57 @@ describe('pickup', () => {
       assert(global.window.dispatchEvent.calledWith(new Event('powerUp')));
     });
 
+    it('emits only awardPoints if a fruit collides with Pacman', () => {
+      pickup.type = 'fruit';
+      pickup.shouldCheckForCollision = sinon.fake.returns(true);
+      pickup.checkForCollision = sinon.fake.returns(true);
+
+      pickup.update();
+      assert(global.window.dispatchEvent.calledOnce);
+      assert(global.window.dispatchEvent.calledWith(
+        new CustomEvent('awardPoints', {
+          detail: {
+            points: pickup.points,
+            type: pickup.type,
+          },
+        }),
+      ));
+    });
+
     it('emits no events if an unrecognized item collides with Pacman', () => {
       pickup.type = 'blah';
       pickup.shouldCheckForCollision = sinon.fake.returns(true);
       pickup.checkForCollision = sinon.fake.returns(true);
 
       pickup.update();
+      assert(!global.window.dispatchEvent.called);
+    });
+
+    it('emits contactlessMode if a contactless pickup collides with Pacman', () => {
+      pickup.type = 'contactless';
+      pickup.shouldCheckForCollision = sinon.fake.returns(true);
+      pickup.checkForCollision = sinon.fake.returns(true);
+
+      pickup.update();
+      assert(global.window.dispatchEvent.calledOnceWith(new Event('contactlessMode')));
+    });
+
+    it('collects visible pacdots inside the Contactless radius', () => {
+      pickup.type = 'pacdot';
+      pickup.points = 10;
+      pickup.animationTarget.style.visibility = 'visible';
+      pickup.shouldCheckForCollision = sinon.fake.returns(false);
+      pickup.shouldCollectContactless = sinon.fake.returns(true);
+
+      pickup.update();
+      assert.strictEqual(pickup.animationTarget.style.visibility, 'hidden');
+      assert(global.window.dispatchEvent.calledWith(new Event('dotEaten')));
     });
 
     it('does nothing if shouldCheckForCollision returns FALSE', () => {
       pickup.shouldCheckForCollision = sinon.fake.returns(false);
       pickup.checkForCollision = sinon.fake();
+      pickup.shouldCollectContactless = sinon.fake.returns(false);
 
       pickup.update();
       assert(!pickup.checkForCollision.called);
