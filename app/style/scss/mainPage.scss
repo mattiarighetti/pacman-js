@@ -352,6 +352,78 @@ body {
   }
 }
 
+.game-receipt-card {
+  background: #f7feff;
+  border: 4px solid #07103a;
+  box-shadow: 6px 6px 0 #1bebc2;
+  box-sizing: border-box;
+  color: #07103a;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  left: 50%;
+  line-height: 1.45;
+  padding: 0.7rem;
+  pointer-events: none;
+  position: absolute;
+  top: 5%;
+  transform: translateX(-50%);
+  width: min(86%, 15rem);
+  z-index: 7;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.receipt-title,
+.receipt-thanks {
+  color: #0f32aa;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.receipt-line {
+  border-top: 3px dashed #07103a;
+  height: 0;
+  width: 100%;
+}
+
+.receipt-row {
+  align-items: flex-start;
+  display: flex;
+  font-size: 0.58rem;
+  gap: 1rem;
+  justify-content: space-between;
+
+  strong {
+    color: #0f32aa;
+    max-width: 55%;
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+}
+
+.receipt-date-row strong {
+  color: #075c84;
+}
+
+.receipt-cut {
+  border-top: 3px dashed #07103a;
+  height: 0;
+  left: 0.5rem;
+  position: absolute;
+  right: 0.5rem;
+}
+
+.receipt-cut-top {
+  top: 0.35rem;
+}
+
+.receipt-cut-bottom {
+  bottom: 0.35rem;
+}
+
 // ATM 8-bit: pulsante play con animazione carta bancomat
 .game-start {
   background: none;
@@ -768,9 +840,20 @@ body {
   width: 2rem;
 }
 
-.pause-options-panel {
-  margin-top: 0;
+.pause-volume-panel {
+  background: rgb(7 16 58 / 92%);
+  border: 4px solid #1bebc2;
+  box-shadow: 4px 4px #04102f;
+  box-sizing: border-box;
+  color: #e8f5ff;
   max-width: 90vw;
+  padding: 1rem;
+  width: min(430px, 86vw);
+}
+
+.pause-volume-control {
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 .options-title {

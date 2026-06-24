@@ -95,11 +95,8 @@
 
       <div class='pos-shell'>
         <div class='pos-controls'>
-          <button>
-            <i id='pause-button' class='material-icons'>pause</i>
-          </button>
-          <button>
-            <i id='sound-button' class='material-icons'>settings</i>
+          <button id='pause-button' class='pause-toggle' type='button' data-icon='pause' aria-label='Pause game'>
+            <span class='pause-icon-pixel' aria-hidden='true'></span>
           </button>
         </div>
 
@@ -114,9 +111,8 @@
           <button id='return-home' class='pause-action pause-home'>
             RETURN HOME
           </button>
-          <div id='pause-options-panel' class='pause-options-panel options-panel'>
-            <div class='options-title'>OPZIONI</div>
-            <label class='volume-control' for='pause-volume-slider'>
+          <div class='pause-volume-panel'>
+            <label class='volume-control pause-volume-control' for='pause-volume-slider'>
               <span id='pause-volume-label'>Volume 100%</span>
               <input id='pause-volume-slider' class='volume-slider' type='range' min='0' max='100' step='1' value='100'>
             </label>
@@ -158,6 +154,30 @@
                   <p id='inky' class='ghost'></p>
                   <p id='pinky' class='ghost'></p>
                   <p id='blinky' class='ghost'></p>
+                  <section id='game-receipt-card' class='game-receipt-card' aria-live='polite' hidden>
+                    <div class='receipt-cut receipt-cut-top'></div>
+                    <div class='receipt-title'>TRANSACTION RECEIPT</div>
+                    <div class='receipt-line'></div>
+                    <div class='receipt-row'>
+                      <span>PLAYER</span>
+                      <strong id='receipt-player-name'>PLAYER NEXI</strong>
+                    </div>
+                    <div class='receipt-row'>
+                      <span>IOSI POINTS</span>
+                      <strong id='receipt-score'>0</strong>
+                    </div>
+                    <div class='receipt-row'>
+                      <span>BEST IOSI</span>
+                      <strong id='receipt-best-score'>0</strong>
+                    </div>
+                    <div class='receipt-row receipt-date-row'>
+                      <span>DATE</span>
+                      <strong id='receipt-date'>--/-- --:--</strong>
+                    </div>
+                    <div class='receipt-line'></div>
+                    <div class='receipt-thanks'>THANK YOU FOR PLAYING</div>
+                    <div class='receipt-cut receipt-cut-bottom'></div>
+                  </section>
                 </div>
 
                 <div id='bottom-row' class='row bottom'>

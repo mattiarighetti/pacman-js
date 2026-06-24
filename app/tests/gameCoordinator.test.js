@@ -11,18 +11,42 @@ const mazeArray = [
 let clock;
 
 function createTestElement(overrides = {}) {
-  return {
+  const element = {
+    attributes: {},
+    dataset: {},
     appendChild: () => {},
     removeChild: () => {},
     addEventListener: () => {},
+    getAttribute(name) {
+      return this.attributes[name];
+    },
     remove: () => {},
+    setAttribute(name, value) {
+      this.attributes[name] = value;
+      if (name === 'data-icon') {
+        this.dataset.icon = value;
+      }
+      if (name === 'aria-label') {
+        this.ariaLabel = value;
+      }
+    },
     style: {},
     scrollWidth: 500,
     value: '',
     textContent: '',
     innerHTML: '',
+  };
+
+  return {
+    ...element,
     ...overrides,
   };
+}
+
+function assertPauseButtonState(element, icon, label) {
+  assert.strictEqual(element.getAttribute('data-icon'), icon);
+  assert.strictEqual(element.getAttribute('aria-label'), label);
+  assert(element.innerHTML.includes('pause-icon-pixel'));
 }
 
 describe('gameCoordinator', () => {
@@ -208,14 +232,7 @@ describe('gameCoordinator', () => {
   describe('constructor', () => {
     it('registers pause menu button click listeners', () => {
       const originalGetElementById = global.document.getElementById;
-      const defaultElement = () => ({
-        appendChild: () => {},
-        removeChild: () => {},
-        addEventListener: () => {},
-        remove: () => {},
-        style: {},
-        scrollWidth: 500,
-      });
+      const defaultElement = () => createTestElement();
       const resumeGameButton = {
         addEventListener: sinon.fake(),
       };
@@ -352,20 +369,41 @@ describe('gameCoordinator', () => {
       global.document.getElementById = originalGetElementById;
     });
 
-    it('handles pages without pause and sound icon buttons', () => {
+    it('handles pages without game receipt elements', () => {
+      const originalGetElementById = global.document.getElementById;
+      const receiptIds = [
+        'game-receipt-card',
+        'receipt-player-name',
+        'receipt-score',
+        'receipt-best-score',
+        'receipt-date',
+      ];
+      global.document.getElementById = (id) => (
+        receiptIds.includes(id)
+          ? null
+          : originalGetElementById(id)
+      );
+
+      const instance = new GameCoordinator();
+      assert.strictEqual(instance.gameReceiptCard, null);
+      instance.showGameReceipt();
+      instance.hideGameReceipt();
+
+      global.document.getElementById = originalGetElementById;
+    });
+
+    it('handles pages without a pause icon button', () => {
       const originalGetElementById = global.document.getElementById;
       global.document.getElementById = (id) => (
-        ['pause-button', 'sound-button'].includes(id)
+        id === 'pause-button'
           ? null
           : originalGetElementById(id)
       );
 
       const instance = new GameCoordinator();
       assert.strictEqual(instance.pauseButton, null);
-      assert.strictEqual(instance.soundButton, null);
 
       instance.setPauseButtonIcon('pause');
-      instance.setSoundButtonIcon(1);
 
       global.document.getElementById = originalGetElementById;
     });
@@ -377,6 +415,7 @@ describe('gameCoordinator', () => {
       comp.firstGame = false;
       comp.playerNameInput = { value: 'Team Nexi' };
       comp.posControls = { hidden: true };
+      comp.gameReceiptCard.hidden = false;
       global.localStorage.setItem = sinon.fake();
 
       comp.startButtonClick();
@@ -385,6 +424,7 @@ describe('gameCoordinator', () => {
       assert.strictEqual(comp.rightCover.style.right, '-50%');
       assert.strictEqual(comp.mainMenu.style.opacity, 0);
       assert.strictEqual(comp.posControls.hidden, false);
+      assert.strictEqual(comp.gameReceiptCard.hidden, true);
       assert.strictEqual(comp.gameStartButton.disabled, true);
       assert(global.localStorage.setItem.calledWith('pacmanNexiCurrentPlayer', 'Team Nexi'));
 
@@ -458,6 +498,7 @@ describe('gameCoordinator', () => {
       comp.gameUi.style.filter = 'blur(5px)';
       comp.pausedText.style.visibility = 'visible';
       comp.pauseButton.innerHTML = 'play_arrow';
+      comp.gameReceiptCard.hidden = false;
     });
 
     it('does nothing before the game engine exists', () => {
@@ -492,7 +533,7 @@ describe('gameCoordinator', () => {
       assert(comp.soundManager.resumeAmbience.called);
       assert.strictEqual(comp.gameUi.style.filter, 'unset');
       assert.strictEqual(comp.pausedText.style.visibility, 'hidden');
-      assert.strictEqual(comp.pauseButton.innerHTML, 'pause');
+      assertPauseButtonState(comp.pauseButton, 'pause', 'Pause game');
       assert(comp.activeTimers[0].resume.called);
       assert(!comp.reset.called);
       assert(!comp.startGameplay.called);
@@ -531,7 +572,8 @@ describe('gameCoordinator', () => {
       assert(comp.soundManager.stopAmbience.called);
       assert.strictEqual(comp.gameUi.style.filter, 'unset');
       assert.strictEqual(comp.pausedText.style.visibility, 'hidden');
-      assert.strictEqual(comp.pauseButton.innerHTML, 'pause');
+      assertPauseButtonState(comp.pauseButton, 'pause', 'Pause game');
+      assert.strictEqual(comp.gameReceiptCard.hidden, true);
       assert(comp.reset.called);
       assert.deepEqual(comp.gameEngine.entityList, ['reset-entity']);
       assert(comp.gameEngine.start.called);
@@ -560,6 +602,7 @@ describe('gameCoordinator', () => {
       comp.gameUi.style.filter = 'blur(5px)';
       comp.pausedText.style.visibility = 'visible';
       comp.pauseButton.innerHTML = 'play_arrow';
+      comp.gameReceiptCard.hidden = false;
       comp.leftCover.style.left = '-50%';
       comp.rightCover.style.right = '-50%';
       comp.mainMenu.style.opacity = 0;
@@ -588,7 +631,8 @@ describe('gameCoordinator', () => {
       assert(comp.soundManager.stopAmbience.called);
       assert.strictEqual(comp.gameUi.style.filter, 'unset');
       assert.strictEqual(comp.pausedText.style.visibility, 'hidden');
-      assert.strictEqual(comp.pauseButton.innerHTML, 'pause');
+      assertPauseButtonState(comp.pauseButton, 'pause', 'Pause game');
+      assert.strictEqual(comp.gameReceiptCard.hidden, true);
       assert(comp.reset.called);
       assert.deepEqual(comp.gameEngine.entityList, ['reset-entity']);
       assert.strictEqual(comp.leftCover.style.left, '0');
@@ -612,21 +656,8 @@ describe('gameCoordinator', () => {
     });
   });
 
-  describe('soundButtonClick', () => {
-    it('opens options instead of toggling the volume', () => {
-      comp.showOptions = sinon.fake();
-      comp.soundManager.setMasterVolume = sinon.fake();
-
-      comp.soundButtonClick();
-      assert(comp.showOptions.called);
-      assert(!comp.soundManager.setMasterVolume.called);
-      assert.strictEqual(comp.soundButton.innerHTML, 'settings');
-    });
-  });
-
   describe('hidePauseMenu', () => {
     it('hides pause UI without an options panel', () => {
-      comp.pauseOptionsPanel = null;
       comp.gameUi.style.filter = 'blur(5px)';
       comp.pausedText.style.visibility = 'visible';
       comp.pauseButton.innerHTML = 'play_arrow';
@@ -635,7 +666,17 @@ describe('gameCoordinator', () => {
 
       assert.strictEqual(comp.gameUi.style.filter, 'unset');
       assert.strictEqual(comp.pausedText.style.visibility, 'hidden');
-      assert.strictEqual(comp.pauseButton.innerHTML, 'pause');
+      assertPauseButtonState(comp.pauseButton, 'pause', 'Pause game');
+    });
+  });
+
+  describe('setPauseButtonIcon', () => {
+    it('updates the pixel icon state and accessible label', () => {
+      comp.setPauseButtonIcon('play_arrow');
+      assertPauseButtonState(comp.pauseButton, 'play', 'Resume game');
+
+      comp.setPauseButtonIcon('pause');
+      assertPauseButtonState(comp.pauseButton, 'pause', 'Pause game');
     });
   });
 
@@ -643,6 +684,7 @@ describe('gameCoordinator', () => {
     it('opens homepage options without hiding menu actions', () => {
       comp.menuActions = { style: { display: 'flex' } };
       comp.homeOptionsPanel = { style: {} };
+      comp.mainMenu.style.visibility = 'visible';
 
       comp.showOptions();
       assert.strictEqual(comp.homeOptionsPanel.style.display, 'flex');
@@ -687,20 +729,21 @@ describe('gameCoordinator', () => {
       comp.hideOptions();
     });
 
-    it('shows pause options without leaving the pause menu', () => {
-      comp.pauseOptionsPanel = { style: {} };
-      comp.pausedText.style.visibility = 'visible';
+    it('does not open homepage options while the game screen is active', () => {
+      comp.homeOptionsPanel = { style: {} };
+      comp.mainMenu.style.visibility = 'hidden';
 
       comp.showOptions();
-      assert.strictEqual(comp.pauseOptionsPanel.style.display, 'flex');
-      assert.strictEqual(comp.pausedText.style.visibility, 'visible');
+      assert.strictEqual(comp.homeOptionsPanel.style.display, undefined);
     });
 
-    it('keeps pause visible when pause options panel is missing', () => {
-      comp.pauseOptionsPanel = null;
+    it('keeps options dedicated to the homepage while pause is visible', () => {
+      comp.homeOptionsPanel = { style: {} };
+      comp.mainMenu.style.visibility = 'visible';
       comp.pausedText.style.visibility = 'visible';
 
       comp.showOptions();
+      assert.strictEqual(comp.homeOptionsPanel.style.display, 'flex');
       assert.strictEqual(comp.pausedText.style.visibility, 'visible');
     });
 
@@ -761,6 +804,54 @@ describe('gameCoordinator', () => {
       assert(comp.soundManager.setMasterVolume.calledWith(0));
       assert.strictEqual(comp.volumeSliders[0].value, '0');
       assert.strictEqual(comp.volumeLabels[0].textContent, 'Volume 0%');
+    });
+  });
+
+  describe('game receipt', () => {
+    it('shows the latest game recap with player name, score, best score, and date', () => {
+      comp.currentPlayerName = '  Receipt   Player  ';
+      comp.points = 450;
+      comp.highScore = 900;
+      comp.gameReceiptCard.hidden = true;
+
+      comp.showGameReceipt();
+
+      assert.strictEqual(comp.gameReceiptCard.hidden, false);
+      assert.strictEqual(comp.receiptPlayerName.textContent, 'Receipt Player');
+      assert.strictEqual(comp.receiptScore.textContent, '450');
+      assert.strictEqual(comp.receiptBestScore.textContent, '900');
+      assert.strictEqual(comp.receiptDate.textContent, comp.formatReceiptDate(new Date()));
+    });
+
+    it('uses the current score as best score when it is higher', () => {
+      comp.currentPlayerName = '';
+      comp.points = 1200;
+      comp.highScore = 900;
+
+      comp.showGameReceipt();
+
+      assert.strictEqual(comp.receiptPlayerName.textContent, 'Player Nexi');
+      assert.strictEqual(comp.receiptBestScore.textContent, '1200');
+    });
+
+    it('safely shows the receipt when optional value elements are missing', () => {
+      comp.gameReceiptCard.hidden = true;
+      comp.receiptPlayerName = null;
+      comp.receiptScore = null;
+      comp.receiptBestScore = null;
+      comp.receiptDate = null;
+
+      comp.showGameReceipt();
+
+      assert.strictEqual(comp.gameReceiptCard.hidden, false);
+    });
+
+    it('hides the game receipt card', () => {
+      comp.gameReceiptCard.hidden = false;
+
+      comp.hideGameReceipt();
+
+      assert.strictEqual(comp.gameReceiptCard.hidden, true);
     });
   });
 
@@ -1807,6 +1898,8 @@ describe('gameCoordinator', () => {
       clock.tick(2250);
       assert(comp.displayText.called);
       assert(comp.fruit.hideFruit.called);
+      assert.strictEqual(comp.gameReceiptCard.hidden, false);
+      assert.strictEqual(comp.receiptScore.textContent, String(comp.points));
 
       clock.tick(2500);
       assert.strictEqual(comp.leftCover.style.left, '0');
@@ -1816,6 +1909,7 @@ describe('gameCoordinator', () => {
       assert.strictEqual(comp.mainMenu.style.opacity, 1);
       assert.strictEqual(comp.gameStartButton.disabled, false);
       assert.strictEqual(comp.mainMenu.style.visibility, 'visible');
+      assert.strictEqual(comp.gameReceiptCard.hidden, true);
     });
   });
 

@@ -30,6 +30,34 @@ describe('homepage', () => {
     assert(!startButton.includes("alt='Nexi'"));
   });
 
+  it('renders the end-game transaction receipt shell hidden by default', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const receiptIndex = html.indexOf("id='game-receipt-card'");
+    const mazeIndex = html.indexOf("id='maze'");
+    const bottomRowIndex = html.indexOf("id='bottom-row'");
+
+    assert(html.includes("id='game-receipt-card'"));
+    assert(html.includes('TRANSACTION RECEIPT'));
+    assert(html.includes("id='receipt-player-name'"));
+    assert(html.includes("id='receipt-score'"));
+    assert(html.includes("id='receipt-best-score'"));
+    assert(html.includes("id='receipt-date'"));
+    assert(html.includes("aria-live='polite' hidden"));
+    assert(receiptIndex > mazeIndex);
+    assert(receiptIndex < bottomRowIndex);
+  });
+
+  it('renders the pause control as an 8-bit button instead of a Material icon', () => {
+    const html = fs.readFileSync('index.html', 'utf8');
+    const pauseButton = html.match(/<button id='pause-button'[\s\S]*?<\/button>/)[0];
+
+    assert(pauseButton.includes("class='pause-toggle'"));
+    assert(pauseButton.includes("data-icon='pause'"));
+    assert(pauseButton.includes("aria-label='Pause game'"));
+    assert(pauseButton.includes("class='pause-icon-pixel'"));
+    assert(!pauseButton.includes('material-icons'));
+  });
+
   it('renders matching menu action icons for options and leaderboard', () => {
     const html = fs.readFileSync('index.html', 'utf8');
     const optionsButton = html.match(/<button id='home-options-button'[\s\S]*?<\/button>/)[0];

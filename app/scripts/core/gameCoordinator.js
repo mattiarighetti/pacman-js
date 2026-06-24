@@ -11,6 +11,11 @@ class GameCoordinator {
     this.fruitDisplay = document.getElementById('fruit-display');
     this.mainMenu = document.getElementById('main-menu-container');
     this.gameStartButton = document.getElementById('game-start');
+    this.gameReceiptCard = document.getElementById('game-receipt-card');
+    this.receiptPlayerName = document.getElementById('receipt-player-name');
+    this.receiptScore = document.getElementById('receipt-score');
+    this.receiptBestScore = document.getElementById('receipt-best-score');
+    this.receiptDate = document.getElementById('receipt-date');
     this.homeOptionsButton = document.getElementById('home-options-button');
     this.homeOptionsCloseButton = document.getElementById('home-options-close');
     this.homeOptionsPanel = document.getElementById('home-options-panel');
@@ -20,9 +25,7 @@ class GameCoordinator {
     this.returnHomeButton = document.getElementById('return-home');
     this.playerNameInput = document.getElementById('player-name-input');
     this.pauseButton = document.getElementById('pause-button');
-    this.soundButton = document.getElementById('sound-button');
     this.posControls = document.querySelector('.pos-controls');
-    this.pauseOptionsPanel = document.getElementById('pause-options-panel');
     this.volumeSliders = [
       document.getElementById('home-volume-slider'),
       document.getElementById('pause-volume-slider'),
@@ -131,6 +134,7 @@ class GameCoordinator {
         Math.floor(Math.random() * this.playerNamePlaceholders.length)
       ];
     }
+    this.setPauseButtonIcon('pause');
 
     this.otpBonusPoints = 500;
     this.otpPenaltyPoints = 250;
@@ -170,12 +174,6 @@ class GameCoordinator {
     }
     if (this.pauseButton) {
       this.pauseButton.addEventListener('click', this.handlePauseKey.bind(this));
-    }
-    if (this.soundButton) {
-      this.soundButton.addEventListener(
-        'click',
-        this.soundButtonClick.bind(this),
-      );
     }
     this.volumeSliders.forEach((slider) => {
       slider.addEventListener('input', this.volumeSliderInput.bind(this));
@@ -244,6 +242,7 @@ class GameCoordinator {
       this.playerNameInput && this.playerNameInput.value,
     );
     localStorage.setItem('pacmanNexiCurrentPlayer', this.currentPlayerName);
+    this.hideGameReceipt();
 
     this.leftCover.style.left = '-50%';
     this.rightCover.style.right = '-50%';
@@ -296,6 +295,7 @@ class GameCoordinator {
 
     this.soundManager.stopAmbience();
     this.hidePauseMenu();
+    this.hideGameReceipt();
 
     this.reset();
     this.gameEngine.entityList = this.entityList;
@@ -317,6 +317,7 @@ class GameCoordinator {
 
     this.soundManager.stopAmbience();
     this.hidePauseMenu();
+    this.hideGameReceipt();
     this.reset();
     this.gameEngine.entityList = this.entityList;
     this.leftCover.style.left = '0';
@@ -327,14 +328,61 @@ class GameCoordinator {
   }
 
   /**
+   * Formats a compact timestamp for the transaction receipt
+   * @param {Date} date - Receipt date
+   * @returns {String}
+   */
+  formatReceiptDate(date = new Date()) {
+    return date.toLocaleString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  /**
+   * Shows the latest game recap as an 8-bit receipt during Game Over
+   */
+  showGameReceipt() {
+    if (!this.gameReceiptCard) {
+      return;
+    }
+
+    const score = Number(this.points || 0);
+    const bestScore = Math.max(Number(this.highScore || 0), score);
+
+    if (this.receiptPlayerName) {
+      this.receiptPlayerName.textContent = this.sanitizePlayerName(this.currentPlayerName);
+    }
+    if (this.receiptScore) {
+      this.receiptScore.textContent = String(score);
+    }
+    if (this.receiptBestScore) {
+      this.receiptBestScore.textContent = String(bestScore);
+    }
+    if (this.receiptDate) {
+      this.receiptDate.textContent = this.formatReceiptDate();
+    }
+
+    this.gameReceiptCard.hidden = false;
+  }
+
+  /**
+   * Hides the latest game recap receipt
+   */
+  hideGameReceipt() {
+    if (this.gameReceiptCard) {
+      this.gameReceiptCard.hidden = true;
+    }
+  }
+
+  /**
    * Hides the pause menu chrome
    */
   hidePauseMenu() {
     this.gameUi.style.filter = 'unset';
     this.pausedText.style.visibility = 'hidden';
-    if (this.pauseOptionsPanel) {
-      this.pauseOptionsPanel.style.display = 'none';
-    }
     this.setPauseButtonIcon('pause');
   }
 
@@ -350,26 +398,18 @@ class GameCoordinator {
   }
 
   /**
-   * Toggles the master volume for the soundManager, and saves the preference to storage
-   */
-  soundButtonClick() {
-    this.showOptions();
-  }
-
-  /**
-   * Shows the options controls from the current screen
+   * Shows the homepage options controls
    */
   showOptions() {
-    if (this.pausedText && this.pausedText.style.visibility === 'visible') {
-      if (this.pauseOptionsPanel) {
-        this.pauseOptionsPanel.style.display = 'flex';
-      }
+    if (!this.homeOptionsPanel) {
       return;
     }
 
-    if (this.homeOptionsPanel) {
-      this.homeOptionsPanel.style.display = 'flex';
+    if (this.mainMenu.style.visibility === 'hidden') {
+      return;
     }
+
+    this.homeOptionsPanel.style.display = 'flex';
   }
 
   /**
@@ -426,15 +466,6 @@ class GameCoordinator {
   }
 
   /**
-   * Sets the icon for the sound button
-   */
-  setSoundButtonIcon() {
-    if (this.soundButton) {
-      this.soundButton.innerHTML = 'settings';
-    }
-  }
-
-  /**
    * Syncs all visible volume controls
    * @param {Number} volumePercent - Volume from 0 to 100
    */
@@ -445,7 +476,6 @@ class GameCoordinator {
     this.volumeLabels.forEach((label, index) => {
       this.volumeLabels[index].textContent = `Volume ${volumePercent}%`;
     });
-    this.setSoundButtonIcon();
   }
 
   /**
@@ -453,7 +483,11 @@ class GameCoordinator {
    */
   setPauseButtonIcon(icon) {
     if (this.pauseButton) {
-      this.pauseButton.innerHTML = icon;
+      const iconName = icon === 'play_arrow' ? 'play' : 'pause';
+      const label = iconName === 'play' ? 'Resume game' : 'Pause game';
+      this.pauseButton.setAttribute('data-icon', iconName);
+      this.pauseButton.setAttribute('aria-label', label);
+      this.pauseButton.innerHTML = '<span class="pause-icon-pixel" aria-hidden="true"></span>';
     }
   }
 
@@ -715,6 +749,7 @@ class GameCoordinator {
     this.clearOtpChallenge(false);
     this.clearPopMessage();
     this.clearDisplayText();
+    this.hideGameReceipt();
 
     this.activeTimers = [];
     this.points = 0;
@@ -1311,6 +1346,7 @@ class GameCoordinator {
         this.scaledTileSize * 10,
         this.scaledTileSize * 2,
       );
+      this.showGameReceipt();
       this.fruit.hideFruit();
 
       new Timer(() => {
@@ -1318,6 +1354,7 @@ class GameCoordinator {
         this.rightCover.style.right = '0';
 
         setTimeout(() => {
+          this.hideGameReceipt();
           this.mainMenu.style.opacity = 1;
           this.gameStartButton.disabled = false;
           this.mainMenu.style.visibility = 'visible';
